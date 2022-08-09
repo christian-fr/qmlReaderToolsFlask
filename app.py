@@ -19,7 +19,7 @@ def prepare_data():
 
 @app.route('/')
 def hello_world():  # put application's code here
-    return 'Hello World!'
+    return redirect('upload')
 
 
 @app.route('/api/', methods=['GET'])
@@ -28,24 +28,11 @@ def mydata_api():
     return jsonify(data)
 
 
-@app.route('/web/', methods=['GET'])
-def mydata_web():
-    data = prepare_data()
-    image_data = ""
-    return render_template('mydata/index.html', data=data, image_data=image_data)
-
-
-@app.route('/form')
-def form():
-    return render_template('form.html')
-
-
-ALLOWED_EXTENSIONS = ['jpg', 'jpeg', 'png']
+ALLOWED_EXTENSIONS = ['jpg', 'jpeg', 'png', 'xml']
 
 
 def allowed_file(filename):
-    return '.' in filename and \
-           filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+    return os.path.splitext(filename)[1].lower() in ALLOWED_EXTENSIONS
 
 
 @app.route('/api', methods=['POST', 'GET'])
@@ -70,12 +57,36 @@ def api():
                 upload_path.mkdir(parents=True, exist_ok=True)
             file.save(full_upload_path)
             return send_file(str(full_upload_path), attachment_filename=f'output{os.path.splitext(file.filename)[1]}')
-            #return redirect(url_for('download_file', name=filename))
+            # return redirect(url_for('download_file', name=filename))
+        else:
+            return "Some error occured."
+
+
+@app.route('/qrt_menu', methods=['POST', 'GET'])
+def qrt_menu():
+    if request.method == 'GET':
+        return render_template('qrt_menu.html')
+    elif request.method == 'POST':
+        return render_template('qrt_details.html')
+
+
+
+@app.route('/qrt_details', methods=['POST', 'GET'])
+def qrt_details():
+    if request.method == 'GET':
+        return "GET"
+    elif request.method == 'POST':
+        return "POST"
+
+
+
 
 
 @app.route('/upload', methods=['POST', 'GET'])
 def upload():
-    if request.method == 'POST':
+    if request.method == 'GET':
+        return render_template('qrt_menu.html')
+    elif request.method == 'POST':
         # check if the post request has the file part
         if 'file' not in request.files:
             flash('No file part')
@@ -105,6 +116,7 @@ def download_file(name):
 def clear_uploads():
     print(UPLOAD_FOLDER)
     Path(UPLOAD_FOLDER.name).rmdir()
+
 
 if __name__ == '__main__':
     app.config['SESSION_TYPE'] = 'filesystem'
