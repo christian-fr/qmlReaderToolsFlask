@@ -93,8 +93,8 @@ def upload():
             if not upload_path.exists():
                 upload_path.mkdir(parents=True, exist_ok=True)
             file.save(full_upload_path)
-            return send_file(str(full_upload_path), attachment_filename=f'output.{os.path.splitext(file.filename)[1]}')
-            return redirect(url_for('download_file', name=filename))
+            return send_file(str(full_upload_path), download_name=f'output{os.path.splitext(file.filename)[1]}')
+            # return redirect(url_for('download_file', name=filename))
 
 
 @app.route('/uploads/<name>')
@@ -104,7 +104,7 @@ def download_file(name):
 
 def clear_uploads():
     print(UPLOAD_FOLDER)
-    os.rmdir(Path(UPLOAD_FOLDER))
+    Path(UPLOAD_FOLDER.name).rmdir()
 
 if __name__ == '__main__':
     app.config['SESSION_TYPE'] = 'filesystem'
