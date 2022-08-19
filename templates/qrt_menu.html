@@ -3,13 +3,20 @@
 <head>
     <meta charset="UTF-8">
     <title>Title</title>
-    {{ data }}
 
 </head>
 <body>
-<form action="http://localhost:5000/qrt_menu" method="POST" enctype="multipart/form-data">
-    <input type="file" name="file" accept=".xml, application/xml"/>
+<ul>
+    {% for file in uploaded_files %}
+    <li>{{ file }}</li>
+    {% endfor %}
+</ul>
+<form action="/upload" method="POST" enctype="multipart/form-data">
+    <input type="file" name="file" accept=".png, image/png, .xml, application/xml"/>
     <input type="submit" value="Submit"/>
+</form>
+<form action="/process" method="GET">
+    <input type="submit" value="Process"/>
 </form>
 </body>
 </html>
