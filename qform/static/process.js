@@ -26,6 +26,7 @@ function trigger_process(file_ids) {
             dataType: 'json',
             success : function(data) {
                 $("#file_" + file_id).find('td').eq(1).html("success")
+                $("#file_" + file_id).find('td').eq(2).html('<a href="file/processed_'.concat(file_id).concat('_.xml">link</a>'))
                 trigger_process(file_ids.slice(1))
             },
             error : function(request, error) {
@@ -51,8 +52,10 @@ function submit_form() {
             new_row.attr('id', 'file_' + data['file_id'])
             new_row.append('<td>')
             new_row.append('<td>')
+            new_row.append('<td>')
             new_row.find('td').eq(0).html(data['filename'])
             new_row.find('td').eq(1).html('uploaded')
+            new_row.find('td').eq(2).html('link')
         },
         error : function(request, error) {
             alert(request)

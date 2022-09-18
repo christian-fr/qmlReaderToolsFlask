@@ -1,7 +1,7 @@
 import os
 import secrets
 from pathlib import Path
-from flask import Flask, render_template, request, json
+from flask import Flask, render_template, request, json, send_from_directory
 from werkzeug.utils import secure_filename, redirect
 from tempfile import TemporaryDirectory
 import time
@@ -14,7 +14,8 @@ app.config['upload_dir'] = TemporaryDirectory()
 app.config['SESSION_TYPE'] = 'filesystem'
 app.secret_key = secrets.token_hex(16)
 
-ALLOWED_EXTENSIONS = ['jpg', 'jpeg', 'png', 'xml']
+# ALLOWED_EXTENSIONS = ['jpg', 'jpeg', 'png', 'xml']
+ALLOWED_EXTENSIONS = ['xml']
 FILE_DICT = None
 
 
@@ -76,13 +77,22 @@ def process_file(file_id):
         )
 
     # magic
-    time.sleep(5)
+    internal_filename = file_dict()[file_id]['internal_filename']
+    file_data = Path(upload_dir(), internal_filename).read_text(encoding='utf-8')
+    processed_filename = 'processed_' + internal_filename
+    Path(upload_dir(), processed_filename).write_text(file_data.replace('x', 'y'))
+    time.sleep(1)
 
     return app.response_class(
         response=json.dumps({'msg': 'success'}),
         status=200,
         mimetype='application/json'
     )
+
+
+@app.route('/file/<string:filename>')
+def get_image(filename):
+    return send_from_directory(upload_dir(), path=filename, as_attachment=False)
 
 
 @app.route('/api/upload', methods=['POST'])

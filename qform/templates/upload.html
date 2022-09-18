@@ -16,17 +16,18 @@
     <tr>
         <th scope="col">File</th>
         <th scope="col">Status</th>
+        <th scope="col">Link</th>
     </tr>
     </thead>
     <tbody>
     {% for file in uploaded_files %}
-    <tr id="file_{{ file['file_id'] }}"><td>{{ file['filename'] }}</td><td>uploaded</td></tr>
+    <tr id="file_{{ file['file_id'] }}"><td>{{ file['filename'] }}</td><td>uploaded</td><td>link</td></tr>
     {% endfor %}
     </tbody>
 </table>
 
 <form id="upload_form">
-    <input type="file" name="file" accept=".png, image/png, .xml, application/xml"/>
+    <input type="file" name="file" accept=".xml, application/xml"/>
     <button type="button" id="upload_button">Upload</button>
     <button type="button" id="process_button">Process</button>
 </form>
