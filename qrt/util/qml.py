@@ -13,10 +13,8 @@ import logging
 import time
 from os import path, mkdir
 import errno
-## noinspection PyUnresolvedReferences
 import pygraphviz
 from lxml import objectify
-from xml.etree import ElementTree
 
 
 class Title:

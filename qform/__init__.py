@@ -145,7 +145,7 @@ def upload_file():
 
 def main():
     try:
-        app.run()
+        app.run(host='0.0.0.0')
     finally:
         if 'upload_dir' in app.config:
             app.config['upload_dir'].cleanup()
