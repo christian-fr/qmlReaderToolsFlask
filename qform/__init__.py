@@ -7,6 +7,7 @@ from tempfile import TemporaryDirectory
 import time
 import random
 from string import hexdigits
+from qrt.util.xml import read_xml, Questionnaire
 
 app = Flask(__name__)
 app.debug = True
@@ -14,7 +15,7 @@ app.config['upload_dir'] = TemporaryDirectory()
 app.config['SESSION_TYPE'] = 'filesystem'
 app.secret_key = secrets.token_hex(16)
 
-ALLOWED_EXTENSIONS = ['jpg', 'jpeg', 'png', 'xml']
+ALLOWED_EXTENSIONS = ['xml']
 FILE_DICT = None
 
 
@@ -76,7 +77,7 @@ def process_file(file_id):
         )
 
     # magic
-    time.sleep(5)
+    file_dict()[file_id]['questionnaire'] = read_xml(Path(upload_dir(), filename))
 
     return app.response_class(
         response=json.dumps({'msg': 'success'}),
@@ -84,6 +85,34 @@ def process_file(file_id):
         mimetype='application/json'
     )
 
+
+@app.route('/api/details/<file_id>', methods=['GET'])
+def file_details(file_id):
+    if file_id not in file_dict():
+        return app.response_class(
+            response=json.dumps({'msg': 'file id not registered'}),
+            status=400,
+            mimetype='application/json'
+        )
+    else:
+        if 'questionnaire' not in file_dict()[file_id]:
+            return app.response_class(
+                response=json.dumps({'msg': 'file has not been processed'}),
+                status=400,
+                mimetype='application/json'
+            )
+        else:
+            q = file_dict()[file_id]['questionnaire']
+    assert isinstance(q, Questionnaire)
+
+    pages_list = list(q.pages)
+    return app.response_class(
+        response=json.dumps({'msg': 'success',
+                             'pages_list': [p.uid for p in file_dict()[file_id]['questionnaire'].pages],
+                             'filename': file_dict()[file_id]['filename']}),
+        status=200,
+        mimetype='application/json'
+    )
 
 @app.route('/api/upload', methods=['POST'])
 def upload_file():

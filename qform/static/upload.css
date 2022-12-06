@@ -8,6 +8,12 @@ tbody {
     background-color: #e4f0f5;
 }
 
+.disabled {
+    color: #6e6e6e;
+    font-style: italic;
+}
+
+
 caption {
     padding: 10px;
     caption-side: bottom;

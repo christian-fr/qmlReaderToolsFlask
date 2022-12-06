@@ -25,12 +25,19 @@ function trigger_process(file_ids) {
             type : 'GET',
             dataType: 'json',
             success : function(data) {
-                $("#file_" + file_id).find('td').eq(1).html("success")
-                trigger_process(file_ids.slice(1))
+                var $file_row = $("#file_" + file_id)
+                $file_row.find('td').eq(1).html("success");
+                var cell = $file_row.find('td').eq(2);
+                var cell2 = $file_row.find('td')[2];
+                cell.empty();
+                cell.removeClass('disabled');
+                $('<a/>', { href: 'api/details/'+file_id, text: 'website_name' })
+                    .appendTo(cell2);
+                trigger_process(file_ids.slice(1));
             },
             error : function(request, error) {
-                $("#file_" + file_id).find('td').eq(1).html("error")
-                trigger_process(file_ids.slice(1))
+                $("#file_" + file_id).find('td').eq(1).html("error");
+                trigger_process(file_ids.slice(1));
             }
         });
     }
@@ -45,17 +52,23 @@ function submit_form() {
         url: '/api/upload',
         data: form_data,
         success : function(data) {
-            var tbody = $('#files_table').find('tbody')
-            tbody.append('<tr>')
-            var new_row = tbody.find('tr').last()
-            new_row.attr('id', 'file_' + data['file_id'])
-            new_row.append('<td>')
-            new_row.append('<td>')
-            new_row.find('td').eq(0).html(data['filename'])
-            new_row.find('td').eq(1).html('uploaded')
+            var tbody = $('#files_table').find('tbody');
+            tbody.append('<tr>');
+            var new_row = tbody.find('tr').last();
+            new_row.attr('id', 'file_' + data['file_id']);
+            new_row.append('<td>');
+            new_row.append('<td>');
+            new_row.append('<td>');
+            new_row.append('<td>');
+            new_row.find('td').eq(0).html(data['filename']);
+            new_row.find('td').eq(1).html('uploaded');
+            new_row.find('td').eq(2).html('not yet processed');
+            new_row.find('td').eq(3).html('not yet processed');
+            new_row.find('td')[2].classList.add('disabled');
+            new_row.find('td')[3].classList.add('disabled');
         },
         error : function(request, error) {
-            alert(request)
+            alert(request);
         },
         processData: false,
         contentType: false
