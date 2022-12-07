@@ -1,13 +1,15 @@
 import os
 import secrets
 from pathlib import Path
-from flask import Flask, render_template, request, json
+from typing import Any, Dict, Optional
+from qrt.util.util import qml_details, make_flowchart
+from flask import Flask, render_template, request, json, send_file
 from werkzeug.utils import secure_filename, redirect
 from tempfile import TemporaryDirectory
 import time
 import random
 from string import hexdigits
-from qrt.util.xml import read_xml, Questionnaire
+from qrt.util.qml import read_xml, Questionnaire
 
 app = Flask(__name__)
 app.debug = True
@@ -52,8 +54,9 @@ def index():
 
 @app.route('/upload', methods=['GET'])
 def upload():
-    uploaded_files = list(file_dict().values())
-    return render_template('upload.html', uploaded_files=uploaded_files)
+    uploaded_files = [{k: v for k, v in f.items() if k not in ['questionnaire']} for f in file_dict().values()]
+    #uploaded_files = list(file_dict().values())
+    return render_template('upload.html', uploaded_files=uploaded_files, flowcharts=uploaded_files)
 
 
 @app.route('/api/process/<file_id>', methods=['GET'])
@@ -77,7 +80,18 @@ def process_file(file_id):
         )
 
     # magic
-    file_dict()[file_id]['questionnaire'] = read_xml(Path(upload_dir(), filename))
+    q = read_xml(Path(upload_dir(), filename))
+    file_dict()[file_id]['questionnaire'] = q
+
+    flowchart_file1 = Path(upload_dir(), file_id + '_flowchart_var_cond.png')
+    flowchart_file2 = Path(upload_dir(), file_id + '_flowchart_var.png')
+    flowchart_file3 = Path(upload_dir(), file_id + '_flowchart.png')
+
+    make_flowchart(q=q, out_file=flowchart_file1, show_var=True, show_cond=True)
+    make_flowchart(q=q, out_file=flowchart_file2, show_var=True, show_cond=False)
+    make_flowchart(q=q, out_file=flowchart_file3, show_var=False, show_cond=False)
+
+    file_dict()[file_id]['flowchart'] = [str(flowchart_file1), str(flowchart_file2), str(flowchart_file3)]
 
     return app.response_class(
         response=json.dumps({'msg': 'success'}),
@@ -114,6 +128,53 @@ def file_details(file_id):
         mimetype='application/json'
     )
 
+
+@app.route('/details/<file_id>', methods=['GET'])
+def details(file_id):
+    if file_id not in file_dict():
+        return app.response_class(
+            response=json.dumps({'msg': 'file id not registered'}),
+            status=400,
+            mimetype='application/json'
+        )
+    else:
+        if 'questionnaire' not in file_dict()[file_id]:
+            return app.response_class(
+                response=json.dumps({'msg': 'file has not been processed'}),
+                status=400,
+                mimetype='application/json'
+            )
+
+    q = file_dict()[file_id]['questionnaire']
+    assert isinstance(q, Questionnaire)
+
+    details_data = qml_details(q, file_id)
+    return render_template('details.html', details_data=details_data)
+
+
+@app.route('/flowchart/<file_id>', methods=['GET'])
+def flowchart(file_id):
+    flowchart_i = file_id[file_id.rfind('_')+1:]
+    file_id = file_id[:file_id.rfind('_')]
+
+    if file_id not in file_dict():
+        return app.response_class(
+            response=json.dumps({'msg': 'file id not registered'}),
+            status=400,
+            mimetype='application/json'
+        )
+    else:
+        if 'questionnaire' not in file_dict()[file_id]:
+            return app.response_class(
+                response=json.dumps({'msg': 'file has not been processed'}),
+                status=400,
+                mimetype='application/json'
+            )
+
+    flowchart_file = file_dict()[file_id]['flowchart'][int(flowchart_i)]
+    return send_file(flowchart_file)
+
+
 @app.route('/api/upload', methods=['POST'])
 def upload_file():
     if 'file' not in request.files:
@@ -141,6 +202,37 @@ def upload_file():
         status=200,
         mimetype='application/json'
     )
+
+
+@app.route('/api/remove/<file_id>', methods=['GET'])
+def remove_file(file_id):
+    if file_id not in file_dict():
+        return app.response_class(
+            response=json.dumps({'msg': 'file id not registered'}),
+            status=400,
+            mimetype='application/json'
+        )
+    else:
+        file_dict().pop(file_id)
+
+    return app.response_class(
+        response=json.dumps({'msg': 'success'}),
+        status=200,
+        mimetype='application/json'
+    )
+
+
+@app.route('/remove/<file_id>', methods=['GET'])
+def remove_file_link(file_id):
+    if file_id not in file_dict():
+        return app.response_class(
+            response=json.dumps({'msg': 'file id not registered'}),
+            status=400,
+            mimetype='application/json'
+        )
+    else:
+        file_dict().pop(file_id)
+    return redirect('/upload')
 
 
 def main():

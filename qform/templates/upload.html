@@ -18,11 +18,12 @@
         <th scope="col">Status</th>
         <th scope="col">Details</th>
         <th scope="col">Flowchart</th>
+        <th scope="col"></th>
     </tr>
     </thead>
     <tbody>
     {% for file in uploaded_files %}
-    <tr id="file_{{ file['file_id'] }}"><td>{{ file['filename'] }}</td><td>uploaded</td></tr>
+        <tr id="file_{{ file['file_id'] }}"><td>{{ file['filename'] }}</td><td>uploaded</td><td class="disabled">not yet processed</td><td class="disabled">not yet processed</td><td><a href="remove/{{ file['file_id'] }}">x</a></td></tr>
     {% endfor %}
     </tbody>
 </table>
