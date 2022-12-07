@@ -40,7 +40,7 @@ function trigger_process(file_ids) {
                 cell3.removeClass('disabled');
 
                 for (let j = 0; j < 3; j++) {
-                    $('<a/>', {href: 'flowchart/' + file_id + '_' + j, text: j, target: '_blank'})
+                    $('<a/>', {href: 'flowchart/' + file_id + '_' + j, text: j+'', target: '_blank'})
                         .appendTo(cell4);
                 }
 
