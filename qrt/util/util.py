@@ -15,7 +15,13 @@ def qml_details(q: Questionnaire, filename: Optional[str] = None) -> Dict[str, A
     if filename is not None:
         details_dict['filename'] = filename
     details_dict['pages'] = [p.uid for p in q.pages]
+
+    for page in q.pages:
+
+        pass
     return details_dict
+
+
 
 
 def make_flowchart(q: Questionnaire,

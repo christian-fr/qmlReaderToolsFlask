@@ -22,11 +22,21 @@ RE_TO_PERSIST = re.compile(r"^\s*toPersist\.put\('([0-9a-zA-Z_]+)',[a-zA-Z0-9_.]
 RE_REDIRECT_TRIG = re.compile(r"^\s*navigatorBean\.redirect\('([a-zA-Z0-9_]+)'\)\s*$")
 RE_REDIRECT_TRIG_AUX = re.compile(r"^\s*navigatorBean\.redirect\(([a-zA-Z0-9_]+)\)\s*$")
 
+QUESTION_ATTACHED_OPEN_TAG = f"{{{NS['zofar']}}}attachedOpen"
+QUESTION_OPEN_TAG = f"{{{NS['zofar']}}}questionOpen"
+QUESTION_MATRIX_OPEN_TAG = f"{{{NS['zofar']}}}openMatrix"
+QUESTION_SINGLE_CHOICE_TAG = f"{{{NS['zofar']}}}questionSingleChoice"
+QUESTION_MATRIX_SINGLE_CHOICE_TAG = f"{{{NS['zofar']}}}matrixSingleChoice"
+QUESTION_MULTIPLE_CHOICE_TAG = f"{{{NS['zofar']}}}multipleChoice"
+QUESTION_MATRIX_MULTIPLE_CHOICE_TAG = f"{{{NS['zofar']}}}matrixMultipleChoice"
+
+ALL_QUESTIONS_TAGS = [QUESTION_ATTACHED_OPEN_TAG, QUESTION_OPEN_TAG, QUESTION_MATRIX_OPEN_TAG,
+                      QUESTION_SINGLE_CHOICE_TAG, QUESTION_MATRIX_SINGLE_CHOICE_TAG,
+                      QUESTION_MULTIPLE_CHOICE_TAG, QUESTION_MULTIPLE_CHOICE_TAG]
 
 def flatten(ll):
     """
     Flattens given list of lists by one level
-
     :param ll: list of lists
     :return: flattened list
     """
@@ -283,9 +293,53 @@ def body_vars(page: ElementTree.Element) -> List[str]:
 
 
 @dataclass
+class AnswerOption:
+    uid: str
+    vars: Optional[Variable]
+    value: Optional[str]
+    label: Optional
+
+
+@dataclass
+class Header:
+    uid: str
+    label: str
+    visible: Optional[str]
+
+
+@dataclass
+class HeaderQuestion(Header):
+    pass
+
+
+@dataclass
+class HeaderIntroduction(Header):
+    pass
+
+@dataclass
+class HeaderInstruction(Header):
+    pass
+
+@dataclass
+class Question:
+    uid: str
+    type: str
+    visible: str
+    vars: List[Variable]
+    aos: List[AnswerOption]
+    headers: List[Header]
+
+    def __init__(self, question_element: ElementTree.Element):
+        self.uid = question_element.attrib['uid']
+        if 'visible' in question_element.attrib:
+            self.visible = question_element.attrib['visible']
+        else:
+            self.visible = 'true'
+
+@dataclass
 class Page:
     uid: str
-    body_vars: List[Transition] = field(default_factory=list)
+    body_vars: List[Variable] = field(default_factory=list)
     transitions: List[Transition] = field(default_factory=list)
     var_refs: List[str] = field(default_factory=list)
     _triggers_list: List[Trigger] = field(default_factory=list)
@@ -296,6 +350,7 @@ class Page:
     visible_conditions: List[str] = field(default_factory=list)
     trig_redirect_on_exit_true: List[TriggerRedirect] = field(default_factory=list)
     trig_redirect_on_exit_false: List[TriggerRedirect] = field(default_factory=list)
+    question_objects: List[Question] = field(default_factory=list)
 
     @property
     def triggers_list(self):
@@ -307,6 +362,9 @@ class Questionnaire:
     pages: List[Page] = field(default_factory=list)
     var_declarations: Dict[str, Variable] = field(default_factory=list)
 
+def question_objects(p: ElementTree.Element):
+    question_elements = [e.tag for e in p.iter() if e.tag in ALL_QUESTIONS_TAGS]
+    return ""
 
 def read_xml(xml_path: Path) -> Questionnaire:
     xml_root = ElementTree.parse(xml_path)
@@ -320,6 +378,7 @@ def read_xml(xml_path: Path) -> Questionnaire:
         p.transitions = transitions(page)
         p.var_ref = var_refs(page)
         p._triggers_list = process_triggers(page)
+        p.question_objects = question_objects(page)
         p.body_vars = body_vars(page)
         p.triggers_vars = [trig.variable for trig in p.triggers_list if isinstance(trig, TriggerVariable)]
         p.trig_json_save = trig_json_vars_save(page)
