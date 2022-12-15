@@ -15,6 +15,9 @@ def qml_details(q: Questionnaire, filename: Optional[str] = None) -> Dict[str, A
     if filename is not None:
         details_dict['filename'] = filename
     details_dict['pages'] = [p.uid for p in q.pages]
+    details_dict['page_questions'] = q.all_page_questions_dict()
+    details_dict['page_body_vars'] = q.all_page_body_vars_dict()
+
     return details_dict
 
 
@@ -56,6 +59,7 @@ def digraph(q: Questionnaire,
             in [p.uid for p in q.pages]}
         # (vars_d[uid]) for uid in [p.uid for p in q.pages]}
         g = nx.relabel_nodes(g, replacement_dict)
-        print()
 
     return g
+
+

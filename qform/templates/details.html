@@ -14,7 +14,9 @@
     {% for key, val in details_data.items() %}
         <article id="article{{ i }}">
             <h1>{{ key }}</h1>
-            {{ val }}
+                {% for entry in val %}
+                    {{ entry }}<br>
+                {% endfor %}
         </article>
     {% endfor %}
 

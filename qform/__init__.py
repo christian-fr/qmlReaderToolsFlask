@@ -149,6 +149,10 @@ def details(file_id):
     assert isinstance(q, Questionnaire)
 
     details_data = qml_details(q, file_id)
+    details_data['filename'] = [details_data['filename']]
+    details_data['pages'] = [details_data['pages']]
+    details_data['page_questions'] = [str((k, v)) for k, v in details_data['page_questions'].items()]
+    details_data['page_body_vars'] = [str((k, v)) for k, v in details_data['page_body_vars'].items()]
     return render_template('details.html', details_data=details_data)
 
 
