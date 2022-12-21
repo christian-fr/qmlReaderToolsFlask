@@ -19,6 +19,6 @@ class TestUtils(TestCase):
     def test_qml_details(self):
         d = qml_details(self.q)
         assert isinstance(self.q, Questionnaire)
-        vars_used = self.q.all_page_body_vars_dict()
+        vars_used = self.q.body_vars_per_page_dict()
         assert 1 == 1
         pass

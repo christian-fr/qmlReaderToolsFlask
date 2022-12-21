@@ -16,16 +16,16 @@ def qml_details(q: Questionnaire, filename: Optional[str] = None) -> Dict[str, A
         details_dict['filename'] = filename
     details_dict['pages'] = [p.uid for p in q.pages]
     details_dict['page_questions'] = q.all_page_questions_dict()
-    details_dict['page_body_vars'] = q.all_page_body_vars_dict()
+    details_dict['page_body_vars'] = q.body_vars_per_page_dict()
 
     return details_dict
 
 
 def make_flowchart(q: Questionnaire,
-              out_file: Path,
-              filename: Optional[str] = None,
-              show_var: bool = True,
-              show_cond: bool = True) -> bool:
+                   out_file: Path,
+                   filename: Optional[str] = None,
+                   show_var: bool = True,
+                   show_cond: bool = True) -> bool:
     g = digraph(q=q, show_var=show_var, show_cond=show_cond)
     # ToDo: add filename
     a = nx.nx_agraph.to_agraph(g)
@@ -61,5 +61,3 @@ def digraph(q: Questionnaire,
         g = nx.relabel_nodes(g, replacement_dict)
 
     return g
-
-

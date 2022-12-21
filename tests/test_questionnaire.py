@@ -18,6 +18,6 @@ class TestQuestionnaire(TestCase):
     def test_qml_details(self):
         d = qml_details(self.q)
         a = self.q.all_page_questions_dict()
-        b = self.q.all_page_body_vars_dict()
+        b = self.q.body_vars_per_page_dict()
         assert 1 == 1
         pass

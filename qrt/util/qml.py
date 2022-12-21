@@ -2,7 +2,7 @@ import argparse
 from collections import defaultdict
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Optional, List, Dict, NewType, Union, Tuple, Any
+from typing import Optional, List, Dict, NewType, Union, Tuple, Any, Set
 import re
 from xml.etree import ElementTree
 from lxml.etree import ElementTree as lEt
@@ -490,6 +490,7 @@ class Page:
     visible_conditions: List[str] = field(default_factory=list)
     trig_redirect_on_exit_true: List[TriggerRedirect] = field(default_factory=list)
     trig_redirect_on_exit_false: List[TriggerRedirect] = field(default_factory=list)
+    warnings: List[str] = field(default_factory=list)
 
     @property
     def triggers_list(self):
@@ -500,15 +501,45 @@ class Page:
 class Questionnaire:
     pages: List[Page] = field(default_factory=list)
     var_declarations: Dict[str, Variable] = field(default_factory=list)
+    warnings: List[str] = field(default_factory=list)
 
-    def all_page_body_vars_dict(self):
+    def body_vars_per_page_dict(self):
         return {p.uid: p.body_vars for p in self.pages}
 
     def all_page_questions_dict(self):
         return {p.uid: p.body_questions for p in self.pages}
 
-    def all_vars_declared(self):
-        return None
+    def all_vars_declared(self) -> Dict[str, str]:
+        return {var_name: var.type for var_name, var in self.var_declarations.items()}
+
+    def vars_declared_not_used(self) -> Dict[str, str]:
+        names_missing = set(self.all_vars_declared().keys()).difference(self.all_page_body_vars().keys())
+        return {varname: self.all_vars_declared()[varname] for varname in names_missing}
+
+    def vars_declared_used_inconsistent(self) -> Dict[str, Set[str]]:
+        results = defaultdict(set)
+        for varname, vartype in self.all_page_body_vars().items():
+            if varname in self.all_vars_declared().keys():
+                if vartype != self.all_vars_declared()[varname]:
+                    results[varname].add(vartype)
+                    results[varname].add(self.all_vars_declared()[varname])
+        return results
+
+    def vars_used_not_declared(self) -> Dict[str, str]:
+        names_missing = set(self.all_page_body_vars().keys()).difference(self.all_vars_declared().keys())
+        return {varname: self.all_page_body_vars()[varname] for varname in names_missing}
+
+    def all_page_body_vars(self) -> Dict[str, str]:
+        vars_dict = {}
+        for page, var_list in self.body_vars_per_page_dict().items():
+            for var_ref in var_list:
+                if var_ref.variable.name in vars_dict:
+                    if var_ref.variable.type != vars_dict[var_ref.variable.name]:
+                        self.warnings.append(
+                            f'variable "{var_ref.variable.name}" already found as type {vars_dict[var_ref.variable.name]}, found on page "{page}" as type "{var_ref.variable.type}"')
+                else:
+                    vars_dict[var_ref.variable.name] = var_ref.variable.type
+        return vars_dict
 
 
 def get_question_parent(element: _lE) -> str:
@@ -611,7 +642,7 @@ def read_xml(xml_path: Path) -> Questionnaire:
 def main(xml_file: str):
     q = read_xml(Path(xml_file))
 
-    d = q.all_page_body_vars_dict()
+    d = q.body_vars_per_page_dict()
 
     vars_dict = {}
     for page, var_list in d.items():
@@ -620,16 +651,25 @@ def main(xml_file: str):
                 try:
                     assert var_ref.variable.type == vars_dict[var_ref.variable.name]
                 except AssertionError as err:
-                    print(f'variable "{var_ref.variable.name}" already found as type {vars_dict[var_ref.variable.name]}, found on page "{page}" as type "{var_ref.variable.type}"')
+                    print(
+                        f'variable "{var_ref.variable.name}" already found as type {vars_dict[var_ref.variable.name]}, found on page "{page}" as type "{var_ref.variable.type}"')
                     # raise AssertionError(err)
             else:
                 vars_dict[var_ref.variable.name] = var_ref.variable.type
             # var_ref.condition
             # var_ref.variable.name
             # var_ref.variable.type
-
-
+    in_u = q.vars_declared_used_inconsistent()
+    n_d = q.vars_used_not_declared()
+    n_u = q.vars_declared_not_used()
+    s = generate_var_declarations(n_d)
+    raise NotImplementedError('CF 2022-12-21')
     pass
+
+
+def generate_var_declarations(var_data: Dict[str, str]):
+    return '\n'.join(
+        [f'\t\t<zofar:variable name="{varname}" type="{vartype}"/>' for varname, vartype in var_data.items()])
 
 
 if __name__ == '__main__':
