@@ -1,6 +1,7 @@
 from unittest import TestCase
 from tests.context import test_qml_path, test_questionnaire
 from qrt.util.util import qml_details
+from qrt.util.qml import Questionnaire
 
 
 class TestUtils(TestCase):
@@ -17,5 +18,7 @@ class TestUtils(TestCase):
 
     def test_qml_details(self):
         d = qml_details(self.q)
+        assert isinstance(self.q, Questionnaire)
+        vars_used = self.q.all_page_body_vars_dict()
         assert 1 == 1
         pass

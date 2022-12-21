@@ -1,10 +1,13 @@
-import os.path
+import argparse
 from collections import defaultdict
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Optional, List, Dict, NewType, Union, Tuple
+from typing import Optional, List, Dict, NewType, Union, Tuple, Any
 import re
 from xml.etree import ElementTree
+from lxml.etree import ElementTree as lEt
+from lxml.etree import _Element as _lE
+from lxml.etree import _Comment as _lC
 
 ZOFAR_NS = "{http://www.his.de/zofar/xml/questionnaire}"
 ZOFAR_NS_URI = "http://www.his.de/zofar/xml/questionnaire"
@@ -37,6 +40,8 @@ ZOFAR_TITLE_TAG = f"{ZOFAR_NS}title"
 ZOFAR_DISPLAY_TAG = f"{ZOFAR_NS}display"
 ZOFAR_TEXT_TAG = f"{ZOFAR_NS}text"
 ZOFAR_QUESTION_OPEN_TAG = f"{ZOFAR_NS}questionOpen"
+ZOFAR_CALENDAR_EPISODES_TAG = f"{ZOFAR_NS}episodes"
+ZOFAR_CALENDAR_EPISODES_TABLE_TAG = f"{ZOFAR_NS}episodesTable"
 ZOFAR_SINGLE_CHOICE_TAG = f"{ZOFAR_NS}questionSingleChoice"
 ZOFAR_MULTIPLE_CHOICE_TAG = f"{ZOFAR_NS}multipleChoice"
 ZOFAR_MATRIX_QUESTION_OPEN_TAG = f"{ZOFAR_NS}matrixQuestionOpen"
@@ -50,7 +55,8 @@ CONDITION_DEFAULT = 'true'
 
 ZOFAR_QUESTION_ELEMENTS = [ZOFAR_QUESTION_OPEN_TAG, ZOFAR_SINGLE_CHOICE_TAG, ZOFAR_MULTIPLE_CHOICE_TAG,
                            ZOFAR_MATRIX_MULTIPLE_CHOICE_TAG, ZOFAR_MATRIX_QUESTION_OPEN_TAG,
-                           ZOFAR_MATRIX_SINGLE_CHOICE_TAG, ZOFAR_MATRIX_MULTIPLE_CHOICE_TAG]
+                           ZOFAR_MATRIX_SINGLE_CHOICE_TAG, ZOFAR_MATRIX_MULTIPLE_CHOICE_TAG,
+                           ZOFAR_CALENDAR_EPISODES_TAG, ZOFAR_CALENDAR_EPISODES_TABLE_TAG]
 
 RE_VAL = re.compile(r'#{([a-zA-Z0-9_]+)\.value}')
 RE_VAL_OF = re.compile(r'#{zofar\.valueOf\(([a-zA-Z0-9_]+)\)}')
@@ -74,17 +80,32 @@ def flatten(ll):
     return [it for li in ll for it in li]
 
 
-@dataclass
-class Transition:
-    target_uid: str
-    # condition as spring expression that has to be fulfilled on order to follow the transition
-    condition: Optional[str] = None
+@dataclass(kw_only=True)
+class ZofarPageObject:
+    uid: str
+    parent_uid: str
+    full_uid: str
+    visible: str
 
 
-@dataclass
+@dataclass(kw_only=True)
 class Variable:
     name: str
     type: str
+
+
+@dataclass(kw_only=True)
+class ZofarQuestion(ZofarPageObject):
+    type: Optional[str]
+    header_list: list
+    var_ref: Optional[Variable]
+
+
+@dataclass(kw_only=True)
+class Transition:
+    target_uid: str
+    condition: Optional[str] = None
+    # condition as spring expression that has to be fulfilled on order to follow the transition
 
 
 # forward declaration of class TriggerVariable
@@ -126,31 +147,42 @@ class TriggerJsCheck(Trigger):
     y_var: str
 
 
-@dataclass
+@dataclass(kw_only=True)
 class VarRef:
     variable: Variable
     # list of conditions (as spring expression) that have to be fulfilled in order to reach the variable reference
     condition: List[str] = field(default_factory=list)
 
 
-@dataclass
+@dataclass(kw_only=True)
 class EnumValue:
     uid: str
     value: int
     label: str
 
 
-@dataclass
+@dataclass(kw_only=True)
 class EnumValues:
     variable: Variable
     values: List[EnumValue]
 
 
 def transitions(page: ElementTree.Element) -> List[Transition]:
-    transitions_list = page.find('./zofar:transitions', NS)
-    if transitions_list:
-        return [Transition(t.attrib['target'], t.attrib['condition']) if 'condition' in t.attrib else
-                Transition(t.attrib['target']) for t in transitions_list]
+    transitions = page.find('./zofar:transitions', NS)
+    if transitions:
+        transitions_list = [t for t in transitions.getchildren() if not isinstance(t, _lC)]
+        if transitions_list:
+
+            print(page.attrib['uid'])
+            try:
+                return [
+                    Transition(target_uid=t.attrib['target'],
+                               condition=t.attrib['condition']) if 'condition' in t.attrib else
+                    Transition(target_uid=t.attrib['target']) for t in transitions_list if not isinstance(t, _lC)]
+            except KeyError as err:
+                print(transitions_list)
+                print([t.attrib for t in transitions_list])
+                raise KeyError(err)
     return []
 
 
@@ -272,9 +304,9 @@ def trig_action_script_items(page: ElementTree.Element,
 def variables(xml_root: ElementTree.ElementTree) -> Dict[str, Variable]:
     # gather all preload variables
     pi_list = flatten([pr.findall('./zofar:preloadItem', NS) for pr in xml_root.find('./zofar:preloads', NS)])
-    pl_var_list = [Variable('PRELOAD' + pi.attrib['variable'], 'string') for pi in pi_list]
+    pl_var_list = [Variable(name='PRELOAD' + pi.attrib['variable'], type='string') for pi in pi_list]
     # gather all regular variable declarations and add preload variables, return
-    reg_var_list = [Variable(v.attrib['name'], v.attrib['type']) for v in
+    reg_var_list = [Variable(name=v.attrib['name'], type=v.attrib['type']) for v in
                     xml_root.find('./zofar:variables', NS).findall('./zofar:variable', NS)]
     return {var.name: var for var in pl_var_list + reg_var_list}
 
@@ -344,6 +376,39 @@ def body_vars(page: ElementTree.Element) -> Dict[str, str]:
     return {}
 
 
+def find_questions(parent: _lE, parent_full_uid: str, question_list: Optional[List[ZofarQuestion]] = None) -> Any:
+    if question_list is None:
+        question_list = []
+    assert True
+    for element in parent.iterchildren():
+        new_parent_full_uid = parent_full_uid
+        if 'uid' in element.attrib:
+            new_parent_full_uid = parent_full_uid + '.' + element.attrib['uid']
+        if element.tag == ZOFAR_SECTION_TAG:
+            find_questions(parent=element, parent_full_uid=new_parent_full_uid, question_list=question_list)
+        assert True
+        question_list.append(element)
+    # recursively search for questions
+    return []
+
+
+def body_questions_vars_lxml(page: _lE):
+    page_uid = page.attrib['uid']
+    if page.find(ZOFAR_BODY_TAG, NS) is None:
+        return [], {}
+
+    page_body = page.find(ZOFAR_BODY_TAG, NS)
+    assert isinstance(page_body, _lE)
+    list_of_questions = find_questions(page_body, page_body.attrib['uid'])
+
+    question_type_list = []
+    variable_dict = {}
+    processed_list = []
+
+    assert True
+    return question_type_list, variable_dict
+
+
 def body_questions_vars(page: ElementTree.Element) -> Tuple[List[str], Dict[str, str]]:
     page_uid = page.attrib['uid']
     question_type_list = []
@@ -387,15 +452,19 @@ def body_questions_vars(page: ElementTree.Element) -> Tuple[List[str], Dict[str,
                             for sub_sub_element in sub_element.iter():
                                 if hasattr(sub_sub_element, 'attrib'):
                                     if 'variable' in sub_sub_element.attrib:
-                                        if sub_sub_element.tag in [ZOFAR_SINGLE_CHOICE_TAG, ZOFAR_MATRIX_SINGLE_CHOICE_TAG]:
+                                        if sub_sub_element.tag in [ZOFAR_SINGLE_CHOICE_TAG,
+                                                                   ZOFAR_MATRIX_SINGLE_CHOICE_TAG]:
                                             if sub_sub_element.attrib['variable'] in variable_dict:
-                                                if variable_dict[sub_sub_element.attrib['variable']] != 'singleChoiceAnswerOption':
+                                                if variable_dict[
+                                                    sub_sub_element.attrib['variable']] != 'singleChoiceAnswerOption':
                                                     raise ValueError(f'Key has wrong type: variable '
                                                                      f'"{sub_sub_element.attrib["variable"]}" found in variable_dict as '
                                                                      f'"{variable_dict[sub_sub_element.attrib["variable"]]}", '
                                                                      f'but also as singleChoiceAnswerOption!')
-                                            variable_dict[sub_sub_element.attrib['variable']] = 'singleChoiceAnswerOption'
-                                        if sub_sub_element.tag in [ZOFAR_MULTIPLE_CHOICE_TAG, ZOFAR_MATRIX_MULTIPLE_CHOICE_TAG]:
+                                            variable_dict[
+                                                sub_sub_element.attrib['variable']] = 'singleChoiceAnswerOption'
+                                        if sub_sub_element.tag in [ZOFAR_MULTIPLE_CHOICE_TAG,
+                                                                   ZOFAR_MATRIX_MULTIPLE_CHOICE_TAG]:
                                             if sub_sub_element.attrib['variable'] in variable_dict:
                                                 if variable_dict[sub_sub_element.attrib['variable']] != 'boolean':
                                                     raise ValueError(f'Key has wrong type: variable '
@@ -409,7 +478,7 @@ def body_questions_vars(page: ElementTree.Element) -> Tuple[List[str], Dict[str,
 @dataclass
 class Page:
     uid: str
-    body_vars: Dict[str, str] = field(default_factory=dict)
+    body_vars: List[VarRef] = field(default_factory=dict)
     body_questions: List[str] = field(default_factory=list)
     transitions: List[Transition] = field(default_factory=list)
     var_ref: List[str] = field(default_factory=list)
@@ -438,21 +507,93 @@ class Questionnaire:
     def all_page_questions_dict(self):
         return {p.uid: p.body_questions for p in self.pages}
 
+    def all_vars_declared(self):
+        return None
+
+
+def get_question_parent(element: _lE) -> str:
+    while element.tag not in ZOFAR_QUESTION_ELEMENTS:
+        element = element.getparent()
+    return element.tag
+
+
+def vars_used(page: _lE) -> List[VarRef]:
+    page_uid = page.attrib['uid']
+    page_body = page.find(ZOFAR_BODY_TAG, NS)
+    if page_body is None:
+        return []
+
+    var_list = []
+    all_var_elements = [ch for ch in page_body.iter() if 'variable' in ch.attrib]
+    for var_element in all_var_elements:
+        condition_list = []
+        element = var_element
+        var_type = None
+        while element.tag != ZOFAR_PAGE_TAG:
+            var_name = var_element.attrib['variable']
+            try:
+                assert var_element is not None
+            except AssertionError as err:
+                print()
+            question_type = get_question_parent(var_element)
+            if var_type is None:
+                if question_type in [ZOFAR_MULTIPLE_CHOICE_TAG, ZOFAR_MATRIX_MULTIPLE_CHOICE_TAG]:
+                    var_type = 'boolean'
+                elif question_type in [ZOFAR_SINGLE_CHOICE_TAG, ZOFAR_MATRIX_SINGLE_CHOICE_TAG]:
+                    var_type = 'singleChoiceAnswerOption'
+                elif question_type in [ZOFAR_QUESTION_OPEN_TAG, ZOFAR_MATRIX_QUESTION_OPEN_TAG,
+                                       ZOFAR_CALENDAR_EPISODES_TAG, ZOFAR_CALENDAR_EPISODES_TABLE_TAG]:
+                    var_type = 'string'
+                else:
+                    raise TypeError(f'Unknown variable type for {var_element=}')
+
+            if 'condition' in element.attrib:
+                condition_list.append(element.attrib['condition'])
+            element = element.getparent()
+
+        var_list.append(VarRef(variable=Variable(name=var_name, type=var_type), condition=condition_list))
+    return var_list
 
 
 def read_xml(xml_path: Path) -> Questionnaire:
     xml_root = ElementTree.parse(xml_path)
+    lxml_root = lEt(file=xml_path)
     q = Questionnaire()
 
     q.var_declarations = variables(xml_root)
 
+    for l_page in lxml_root.iterfind(ZOFAR_PAGE_TAG, NS):
+        p = Page(l_page.attrib['uid'])
+        p.body_vars = vars_used(l_page)
+        # tmp_q, tmp_v = body_questions_vars_lxml(l_page)
+        p = Page(l_page.attrib['uid'])
+
+        p.transitions = transitions(l_page)
+        p.var_ref = var_refs(l_page)
+        p._triggers_list = process_triggers(l_page)
+        p.body_vars = vars_used(l_page)
+        # p.body_questions, p.body_vars = body_questions_vars(l_page)
+
+        p.triggers_vars = [trig.variable for trig in p.triggers_list if isinstance(trig, TriggerVariable)]
+        p.trig_json_save = trig_json_vars_save(l_page)
+        p.trig_json_load = trig_json_vars_load(l_page)
+        p.trig_json_reset = trig_json_vars_reset(l_page)
+        p.visible_conditions = visible_conditions(l_page)
+
+        p.trig_redirect_on_exit_true = redirect_triggers(p.triggers_list, 'true')
+        p.trig_redirect_on_exit_false = redirect_triggers(p.triggers_list, 'false')
+
+        q.pages.append(p)
+
     for page in xml_root.findall('./zofar:page', NS):
+        continue
         p = Page(page.attrib['uid'])
 
         p.transitions = transitions(page)
         p.var_ref = var_refs(page)
         p._triggers_list = process_triggers(page)
         p.body_questions, p.body_vars = body_questions_vars(page)
+
         p.triggers_vars = [trig.variable for trig in p.triggers_list if isinstance(trig, TriggerVariable)]
         p.trig_json_save = trig_json_vars_save(page)
         p.trig_json_load = trig_json_vars_load(page)
@@ -467,7 +608,34 @@ def read_xml(xml_path: Path) -> Questionnaire:
     return q
 
 
+def main(xml_file: str):
+    q = read_xml(Path(xml_file))
+
+    d = q.all_page_body_vars_dict()
+
+    vars_dict = {}
+    for page, var_list in d.items():
+        for var_ref in var_list:
+            if var_ref.variable.name in vars_dict:
+                try:
+                    assert var_ref.variable.type == vars_dict[var_ref.variable.name]
+                except AssertionError as err:
+                    print(f'variable "{var_ref.variable.name}" already found as type {vars_dict[var_ref.variable.name]}, found on page "{page}" as type "{var_ref.variable.type}"')
+                    # raise AssertionError(err)
+            else:
+                vars_dict[var_ref.variable.name] = var_ref.variable.type
+            # var_ref.condition
+            # var_ref.variable.name
+            # var_ref.variable.type
+
+
+    pass
+
+
 if __name__ == '__main__':
-    input_xml = Path(r'C:\Users\friedrich\zofar_workspace\slc_stube22-2\src\main\resources\questionnaire.xml')
-    questionnaire = read_xml(input_xml)
+    parser = argparse.ArgumentParser(description="")
+    parser.add_argument('-i', '--xml-file', help='The path of the XML input')
+    ns = parser.parse_args()
+    main(**ns.__dict__)
+
     pass
