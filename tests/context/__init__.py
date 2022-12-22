@@ -9,4 +9,3 @@ def test_qml_path():
 
 def test_questionnaire():
     return read_xml(test_qml_path())
-

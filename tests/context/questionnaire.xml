@@ -41,7 +41,7 @@
 		<zofar:variable name="var03c" type="string"/>
 		<zofar:variable name="var03d" type="string"/>
 		<zofar:variable name="var03e" type="string"/>
-		<zofar:variable name="var03f" type="string"/>
+		<zofar:variable name="var03f" type="singleChoiceAnswerOption"/>
 		<zofar:variable name="var03g" type="string"/>
 		<zofar:variable name="var03h" type="string"/>
 		<zofar:variable name="var03i" type="string"/>
@@ -182,7 +182,9 @@
     				<zofar:answerOption uid="ao1" value="1" label="Ich tue nichts."></zofar:answerOption>
     				<zofar:answerOption uid="ao2" value="2" label="Ich tue viel."></zofar:answerOption>
     				<zofar:answerOption uid="ao3" value="3" label="Ich habe mal etwas getan."></zofar:answerOption>
-    				<zofar:answerOption uid="ao4" value="4" label="Ich werde wieder etwas tun." condition="true"></zofar:answerOption>
+    				<zofar:answerOption uid="ao4" value="4" label="Ich werde wieder etwas tun." condition="true">
+                        <zofar:questionOpen uid="qo" variable="comment01" size="35"></zofar:questionOpen>
+                    </zofar:answerOption>
     			</zofar:responseDomain>
     		</zofar:questionSingleChoice>
 
@@ -297,7 +299,7 @@
 					</zofar:question>
 				</zofar:header>
 			</zofar:questionOpen>
-			<zofar:questionOpen variable="var03j" uid="qopen" columns="110" rows="4" smallOption="false">
+			<zofar:questionOpen variable="var03f" uid="qopen" columns="110" rows="4" smallOption="false">
 				<zofar:header>
 					<zofar:question uid="q1" block="true">
 						Warum haben Sie etwas getan?
@@ -472,7 +474,7 @@
 
 	<zofar:page uid="A09">
 		<zofar:body uid="body">
-			<zofar:questionOpen variable="var06" uid="qopen1"
+			<zofar:questionOpen variable="var03i" uid="qopen1"
 					size="4" type="number" validationMessage="Bitte geben Sie einen Wert zwischen 0 und 100 an."
 					minValue="0" maxValue="100">
 				<zofar:header>
@@ -491,6 +493,33 @@
 				<zofar:prefix>
 					<zofar:label uid="label1">
 						Ich habe ca. 
+					</zofar:label>
+				</zofar:prefix>
+				<zofar:postfix>
+					<zofar:label uid="label2">
+						% Prozent(e).
+					</zofar:label>
+				</zofar:postfix>
+			</zofar:questionOpen>
+			<zofar:questionOpen variable="var03j" uid="qopen1"
+					size="4" type="number" validationMessage="Bitte geben Sie einen Wert zwischen 0 und 100 an."
+					minValue="0" maxValue="100">
+				<zofar:header>
+					<zofar:question uid="q1" block="true" visible="zofar.asNumber(var02)==4">
+						Wie viel Prozent?
+					</zofar:question>
+					<zofar:question uid="q2" block="true" visible="zofar.asNumber(var02)==1 or zofar.asNumber(var02)==3">
+						Wie viele Prozente?
+					</zofar:question>
+					<zofar:instruction uid="instr1" block="true">
+						Bitte geben Sie nur Zahlen ein und verzichten Sie auf Nachkommastellen.
+						#{layout.BREAK}
+						(Beispiel: 25 und nicht 25,00)
+					</zofar:instruction>
+				</zofar:header>
+				<zofar:prefix>
+					<zofar:label uid="label1">
+						Ich habe ca.
 					</zofar:label>
 				</zofar:prefix>
 				<zofar:postfix>
@@ -1466,7 +1495,7 @@
                         <zofar:header>
                             <zofar:question uid="q">verhält sich fürsorglich.</zofar:question>
                         </zofar:header>
-                        <zofar:responseDomain variable="var35b" uid="rd">
+                        <zofar:responseDomain variable="var03f" uid="rd">
                             <zofar:answerOption uid="ao1" value="1" label="trifft gar nicht zu" />
                             <zofar:answerOption uid="ao2" value="2" label="" />
                             <zofar:answerOption uid="ao3" value="3" label="" />

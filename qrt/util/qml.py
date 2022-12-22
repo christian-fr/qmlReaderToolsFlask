@@ -153,6 +153,9 @@ class VarRef:
     # list of conditions (as spring expression) that have to be fulfilled in order to reach the variable reference
     condition: List[str] = field(default_factory=list)
 
+    def __str__(self):
+        return f'{self.variable.name}: {self.variable.type}; {self.condition}'
+
 
 @dataclass(kw_only=True)
 class EnumValue:
@@ -409,11 +412,44 @@ def body_questions_vars_lxml(page: _lE):
     return question_type_list, variable_dict
 
 
-def body_questions_vars(page: ElementTree.Element) -> Tuple[List[str], Dict[str, str]]:
+def body_questions_vars(page: _lE) -> Tuple[List[str], Dict[str, str]]:
     page_uid = page.attrib['uid']
     question_type_list = []
     variable_dict = {}
     processed_list = []
+
+    body_element = page.find(ZOFAR_BODY_TAG, NS)
+    if body_element is not None:
+        for element in body_element.iter():
+            if element.tag in ZOFAR_QUESTION_ELEMENTS:
+                sub_questions = [sc for sc in element.iter() if sc.tag in ZOFAR_QUESTION_ELEMENTS and sc != element]
+                if sub_questions:
+                    for sq in sub_questions:
+                        if sq.tag == ZOFAR_QUESTION_OPEN_TAG:
+                            question_type_list.append("questionOpen(attached)")
+                        else:
+                            raise NotImplementedError(f'Nested question of type "{sq.tag=}" not implemented!')
+
+                question_type_list.append(element.tag.replace(ZOFAR_NS, ''))
+
+                if element.tag == ZOFAR_SINGLE_CHOICE_TAG:
+                    pass
+                elif element.tag == ZOFAR_MATRIX_SINGLE_CHOICE_TAG:
+                    pass
+                elif element.tag == ZOFAR_QUESTION_OPEN_TAG:
+                    pass
+                elif element.tag == ZOFAR_MATRIX_QUESTION_OPEN_TAG:
+                    pass
+                elif element.tag == ZOFAR_MULTIPLE_CHOICE_TAG:
+                    pass
+                elif element.tag == ZOFAR_MATRIX_MULTIPLE_CHOICE_TAG:
+                    pass
+                elif element.tag == ZOFAR_CALENDAR_EPISODES_TAG:
+                    pass
+                elif element.tag == ZOFAR_CALENDAR_EPISODES_TABLE_TAG:
+                    pass
+        return question_type_list
+
     if page.find('./zofar:body', NS) is not None:
         assert True
         for element in page.find('./zofar:body', NS).iter():
@@ -603,7 +639,7 @@ def read_xml(xml_path: Path) -> Questionnaire:
         p.var_ref = var_refs(l_page)
         p._triggers_list = process_triggers(l_page)
         p.body_vars = vars_used(l_page)
-        # p.body_questions, p.body_vars = body_questions_vars(l_page)
+        p.body_questions = body_questions_vars(l_page)
 
         p.triggers_vars = [trig.variable for trig in p.triggers_list if isinstance(trig, TriggerVariable)]
         p.trig_json_save = trig_json_vars_save(l_page)
@@ -623,7 +659,6 @@ def read_xml(xml_path: Path) -> Questionnaire:
         p.transitions = transitions(page)
         p.var_ref = var_refs(page)
         p._triggers_list = process_triggers(page)
-        p.body_questions, p.body_vars = body_questions_vars(page)
 
         p.triggers_vars = [trig.variable for trig in p.triggers_list if isinstance(trig, TriggerVariable)]
         p.trig_json_save = trig_json_vars_save(page)
@@ -640,36 +675,8 @@ def read_xml(xml_path: Path) -> Questionnaire:
 
 
 def main(xml_file: str):
-    q = read_xml(Path(xml_file))
-
-    d = q.body_vars_per_page_dict()
-
-    vars_dict = {}
-    for page, var_list in d.items():
-        for var_ref in var_list:
-            if var_ref.variable.name in vars_dict:
-                try:
-                    assert var_ref.variable.type == vars_dict[var_ref.variable.name]
-                except AssertionError as err:
-                    print(
-                        f'variable "{var_ref.variable.name}" already found as type {vars_dict[var_ref.variable.name]}, found on page "{page}" as type "{var_ref.variable.type}"')
-                    # raise AssertionError(err)
-            else:
-                vars_dict[var_ref.variable.name] = var_ref.variable.type
-            # var_ref.condition
-            # var_ref.variable.name
-            # var_ref.variable.type
-    in_u = q.vars_declared_used_inconsistent()
-    n_d = q.vars_used_not_declared()
-    n_u = q.vars_declared_not_used()
-    s = generate_var_declarations(n_d)
     raise NotImplementedError('CF 2022-12-21')
     pass
-
-
-def generate_var_declarations(var_data: Dict[str, str]):
-    return '\n'.join(
-        [f'\t\t<zofar:variable name="{varname}" type="{vartype}"/>' for varname, vartype in var_data.items()])
 
 
 if __name__ == '__main__':
