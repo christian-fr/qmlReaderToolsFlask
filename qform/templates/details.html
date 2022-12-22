@@ -4,21 +4,29 @@
     <meta charset="UTF-8">
     <title>Title</title>
     <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='upload.css') }}">
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='default.css') }}">
     <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
-{#    <script>#}
-{#        window.uploaded_files = {{ uploaded_files|tojson }};#}
-{#    </script>#}
-{#    <script src="{{ url_for('static', filename='process.js') }}"></script>#}
+    {#    <script>#}
+    {#        window.uploaded_files = {{ uploaded_files|tojson }};#}
+    {#    </script>#}
+    {#    <script src="{{ url_for('static', filename='process.js') }}"></script>#}
 </head>
 <body>
-    {% for key, val in details_data.items() %}
-        <article id="article{{ i }}">
-            <h1>{{ key }}</h1>
-                {% for entry in val %}
-                    {{ entry }}<br>
-                {% endfor %}
-        </article>
-    {% endfor %}
+<h1>QML Details</h1>
+{% for key in details_data.keys() %}
+<a href="#{{ key }}">{{ key }}</a> <br>
+{% endfor %}
+
+{% for key, val in details_data.items() %}
+    <article id="article{{ i }}">
+        <section id="{{ key }}">
+        <h2>{{ key }}</h2>
+        {% for entry in val %}
+            <div class="detailsEntry">{{ entry }}</div>
+        {% endfor %}
+        </section>
+    </article>
+{% endfor %}
 
 </body>
 </html>

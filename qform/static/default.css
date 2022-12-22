@@ -1,0 +1,19 @@
+@font-face {
+    font-family: Monospaced;
+    src: url('fonts/SpaceMono-Regular.ttf');
+    font-weight: normal;
+}
+
+body {
+    font-family: Monospaced, monospace;
+    color: midnightblue
+}
+
+h1 {
+    font-family: Monospaced, monospace;
+    color: pink
+}
+
+.detailsEntry {
+    margin-left: 1rem;
+}

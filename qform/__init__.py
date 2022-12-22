@@ -1,7 +1,8 @@
 import os
 import secrets
+from collections import OrderedDict
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, List
 from qrt.util.util import qml_details, make_flowchart
 from flask import Flask, render_template, request, json, send_file
 from werkzeug.utils import secure_filename, redirect
@@ -55,7 +56,7 @@ def index():
 @app.route('/upload', methods=['GET'])
 def upload():
     uploaded_files = [{k: v for k, v in f.items() if k not in ['questionnaire']} for f in file_dict().values()]
-    #uploaded_files = list(file_dict().values())
+    # uploaded_files = list(file_dict().values())
     return render_template('upload.html', uploaded_files=uploaded_files, flowcharts=uploaded_files)
 
 
@@ -148,17 +149,32 @@ def details(file_id):
     q = file_dict()[file_id]['questionnaire']
     assert isinstance(q, Questionnaire)
 
-    details_data = qml_details(q, file_id)
-    details_data['filename'] = [details_data['filename']]
-    details_data['pages'] = [details_data['pages']]
-    details_data['page_questions'] = [str((k, v)) for k, v in details_data['page_questions'].items()]
-    details_data['all_variables_used_per_page'] = [str((k, [str(x) for x in v])) for k, v in details_data['all_variables_used_per_page'].items()]
+    details_data = prepare_dict_for_html(qml_details(q, file_id))
     return render_template('details.html', details_data=details_data)
+
+
+def prepare_dict_for_html(input_dict) -> Dict[str, List[str]]:
+    details_data = OrderedDict()
+    for k1, v1 in input_dict.items():
+        if v1:
+            if isinstance(v1, str):
+                pass
+            elif isinstance(v1, list):
+                details_data[k1] = [v1]
+            elif isinstance(v1, dict):
+
+                details_data[k1] = {str((k2, [str(val) for val in v2] if isinstance(v2, list) else [v2])) for k2, v2 in input_dict[k1].items()}
+            else:
+                raise NotImplementedError()
+
+        else:
+            details_data[k1] = ["--"]
+    return details_data
 
 
 @app.route('/flowchart/<file_id>', methods=['GET'])
 def flowchart(file_id):
-    flowchart_i = file_id[file_id.rfind('_')+1:]
+    flowchart_i = file_id[file_id.rfind('_') + 1:]
     file_id = file_id[:file_id.rfind('_')]
 
     if file_id not in file_dict():
