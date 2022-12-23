@@ -1,4 +1,5 @@
 import argparse
+import copy
 from collections import defaultdict
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -156,6 +157,29 @@ class VarRef:
     def __str__(self):
         return f'{self.variable.name}: {self.variable.type}; {self.condition}'
 
+    def __gt__(self, other):
+        if not isinstance(other, VarRef):
+            raise TypeError("can only compare to other VarRef objects")
+        return self.variable.name > other.variable.name
+
+    def __lt__(self, other):
+        if not isinstance(other, VarRef):
+            raise TypeError("can only compare to other VarRef objects")
+        return self.variable.name > other.variable.name
+
+    def __ge__(self, other):
+        if not isinstance(other, VarRef):
+            raise TypeError("can only compare to other VarRef objects")
+        return self.variable.name >= other.variable.name
+
+    def __le__(self, other):
+        if not isinstance(other, VarRef):
+            raise TypeError("can only compare to other VarRef objects")
+        return self.variable.name <= other.variable.name
+
+    def __dict__(self):
+        return {self.variable.name: (self.variable.type, self.condition)}
+
 
 @dataclass(kw_only=True)
 class EnumValue:
@@ -175,8 +199,6 @@ def transitions(page: ElementTree.Element) -> List[Transition]:
     if transitions:
         transitions_list = [t for t in transitions.getchildren() if not isinstance(t, _lC)]
         if transitions_list:
-
-            print(page.attrib['uid'])
             try:
                 return [
                     Transition(target_uid=t.attrib['target'],
@@ -225,7 +247,7 @@ def action_trigger(trigger: ElementTree.Element) -> TriggerAction:
                              on_exit=on_exit,
                              direction=direction,
                              condition=condition)
-    print(ElementTree.tostring(trigger))
+    # print(ElementTree.tostring(trigger))
     raise KeyError('Key "command" not found for variable trigger.')
 
 
@@ -235,7 +257,7 @@ def variable_trigger(trigger: ElementTree.Element) -> TriggerVariable:
         if 'condition' in trigger.attrib:
             condition = trigger.attrib['condition']
         return TriggerVariable(variable=trigger.attrib['variable'], value=trigger.attrib['value'], condition=condition)
-    print(ElementTree.tostring(trigger))
+    # print(ElementTree.tostring(trigger))
     raise KeyError('Keys "variable" and/or "value" not found for variable trigger.')
 
 
@@ -243,7 +265,7 @@ def js_check_trigger(trigger: ElementTree.Element) -> TriggerJsCheck:
     if 'variable' in trigger.attrib and 'xvar' in trigger.attrib and 'yvar' in trigger.attrib:
         return TriggerJsCheck(variable=trigger.attrib['variable'], x_var=trigger.attrib['xvar'],
                               y_var=trigger.attrib['yvar'])
-    print(ElementTree.tostring(trigger))
+    # print(ElementTree.tostring(trigger))
     raise KeyError('Keys "variable" and/or "xvar" and/or "yvar" not found for variable trigger.')
 
 
@@ -527,6 +549,7 @@ class Page:
     trig_redirect_on_exit_true: List[TriggerRedirect] = field(default_factory=list)
     trig_redirect_on_exit_false: List[TriggerRedirect] = field(default_factory=list)
     warnings: List[str] = field(default_factory=list)
+    source_element: _lE = field(default_factory=_lE)
 
     @property
     def triggers_list(self):
@@ -538,6 +561,7 @@ class Questionnaire:
     pages: List[Page] = field(default_factory=list)
     var_declarations: Dict[str, Variable] = field(default_factory=list)
     warnings: List[str] = field(default_factory=list)
+    xml_root: lEt = field(default_factory=lEt)
 
     def body_vars_per_page_dict(self):
         return {p.uid: p.body_vars for p in self.pages}
@@ -552,14 +576,14 @@ class Questionnaire:
         names_missing = set(self.all_vars_declared().keys()).difference(self.all_page_body_vars().keys())
         return {varname: self.all_vars_declared()[varname] for varname in names_missing}
 
-    def vars_declared_used_inconsistent(self) -> Dict[str, Set[str]]:
+    def vars_declared_used_inconsistent(self) -> Dict[str, List[str]]:
         results = defaultdict(set)
         for varname, vartype in self.all_page_body_vars().items():
             if varname in self.all_vars_declared().keys():
                 if vartype != self.all_vars_declared()[varname]:
                     results[varname].add(vartype)
                     results[varname].add(self.all_vars_declared()[varname])
-        return results
+        return {k: list(v) for k, v in results.items()}
 
     def vars_used_not_declared(self) -> Dict[str, str]:
         names_missing = set(self.all_page_body_vars().keys()).difference(self.all_vars_declared().keys())
@@ -626,11 +650,12 @@ def read_xml(xml_path: Path) -> Questionnaire:
     xml_root = ElementTree.parse(xml_path)
     lxml_root = lEt(file=xml_path)
     q = Questionnaire()
-
+    q.xml_root = copy.deepcopy(lxml_root)
     q.var_declarations = variables(xml_root)
 
     for l_page in lxml_root.iterfind(ZOFAR_PAGE_TAG, NS):
         p = Page(l_page.attrib['uid'])
+
         p.body_vars = vars_used(l_page)
         # tmp_q, tmp_v = body_questions_vars_lxml(l_page)
         p = Page(l_page.attrib['uid'])

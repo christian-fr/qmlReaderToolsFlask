@@ -10,7 +10,7 @@ from tempfile import TemporaryDirectory
 import time
 import random
 from string import hexdigits
-from qrt.util.qml import read_xml, Questionnaire
+from qrt.util.qml import read_xml, Questionnaire, VarRef
 
 app = Flask(__name__)
 app.debug = True
@@ -153,6 +153,17 @@ def details(file_id):
     return render_template('details.html', details_data=details_data)
 
 
+def serialize(obj):
+    """JSON serializer for objects not serializable by default json code"""
+
+    if isinstance(obj, VarRef):
+        serial = obj.__dict__
+        return {obj.variable.name: [obj.variable.type, obj.condition]}
+
+    return obj.__dict__
+
+
+
 def prepare_dict_for_html(input_dict) -> Dict[str, List[str]]:
     details_data = OrderedDict()
     for k1, v1 in input_dict.items():
@@ -162,8 +173,16 @@ def prepare_dict_for_html(input_dict) -> Dict[str, List[str]]:
             elif isinstance(v1, list):
                 details_data[k1] = [v1]
             elif isinstance(v1, dict):
-
-                details_data[k1] = {str((k2, [str(val) for val in v2] if isinstance(v2, list) else [v2])) for k2, v2 in input_dict[k1].items()}
+                tmp_dict = OrderedDict()
+                tmp_keys_list = list(input_dict[k1].keys())
+                tmp_keys_list.sort()
+                details_data[k1] = []
+                for k2 in tmp_keys_list:
+                    v2 = input_dict[k1][k2]
+                    if isinstance(v2, list):
+                        v2.sort(key=lambda x: x)
+                    details_data[k1].append(json.dumps({k2: v2}, default=serialize))
+                # details_data[k1] = {str((k2, [str(val) for val in v2] if isinstance(v2, list) else [v2])) for k2, v2 in input_dict[k1].items()}
             else:
                 raise NotImplementedError()
 

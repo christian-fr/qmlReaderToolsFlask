@@ -1,9 +1,11 @@
+import re
 from collections import defaultdict, OrderedDict
 from pathlib import Path
 from typing import Any, Dict, Optional, Generator, List, Union, Tuple
-from qrt.util.qml import read_xml, Questionnaire
+from qrt.util.qml import read_xml, Questionnaire, ZOFAR_PAGE_TAG, NS
 import networkx as nx
 import pygraphviz
+from lxml.etree import ElementTree as lEt
 
 
 def flatten(ll: List[Union[List[Any], Tuple[Any]]]) -> Generator[Any, Any, None]:
@@ -41,8 +43,52 @@ def qml_details(q: Questionnaire, filename: Optional[str] = None) -> Dict[str, A
     details_dict['used_but_undeclared_vars'] = q.vars_used_not_declared()
     # variable declarations
     details_dict['used_but_undeclared_variables_declarations'] = generate_var_declarations(q.vars_used_not_declared())
+    details_dict['used_zofar_functions'] = all_zofar_functions(q)
+    details_dict['all_variables_per_type'] = all_vars_per_type(q)
 
     return details_dict
+
+
+RE_ZOFAR_FN_AS_NUMBER = re.compile(r'zofar\.asNumber\(([a-zA-Z0-9_]+)\)')
+RE_ZOFAR_FN_IS_MISSING = re.compile(r'zofar\.isMissing\(([a-zA-Z0-9_]+)\)')
+RE_ZOFAR_FN_VALUE = re.compile(r'([a-zA-Z0-9_]+)\.value')
+
+RE_ALL_ZOFAR_FUNCTIONS = {'zofar.asNumber()': RE_ZOFAR_FN_AS_NUMBER,
+                          'zofar.isMissing()': RE_ZOFAR_FN_IS_MISSING,
+                          '.value': RE_ZOFAR_FN_VALUE}
+
+
+def all_vars_per_type(q: Questionnaire) -> Dict[str, List[str]]:
+    results = defaultdict(list)
+    [results[var_type].append(var_name) for var_name, var_type in q.all_vars_declared().items()]
+    return results
+
+
+def extract_attribute_values(root: lEt, attr_name: str) -> List[str]:
+    results = []
+    for e in root.iterfind(ZOFAR_PAGE_TAG, NS):
+        for el in e.iter():
+            if hasattr(el, 'attrib'):
+                if attr_name in el.attrib:
+                    results.append(el.attrib[attr_name])
+    return results
+
+
+def all_zofar_functions(q: Questionnaire) -> Dict[str, List[str]]:
+    a_c = extract_attribute_values(q.xml_root, 'condition')
+    a_vc = extract_attribute_values(q.xml_root, 'visible')
+    a_si = extract_attribute_values(q.xml_root, 'command')
+
+    all_lists = a_c + a_vc + a_si
+    all_str = ' '.join(all_lists)
+
+    return {re_name: to_set_to_sorted_list(re_fn.findall(all_str)) for re_name, re_fn in RE_ALL_ZOFAR_FUNCTIONS.items()}
+
+
+def to_set_to_sorted_list(in_list: List[str]) -> List[str]:
+    in_list = list(set(in_list))
+    in_list.sort()
+    return in_list
 
 
 def make_flowchart(q: Questionnaire,

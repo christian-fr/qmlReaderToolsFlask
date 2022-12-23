@@ -1,5 +1,6 @@
 Flask~=2.2.2
 Werkzeug~=2.2.2
 networkx~=2.8.8
-lxml~=4.9.1
+lxml~=4.9.2
 pygraphviz~=1.9
+python-dotenv~=0.21.0
