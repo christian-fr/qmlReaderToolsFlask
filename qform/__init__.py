@@ -1,10 +1,13 @@
 import os
 import secrets
 from collections import OrderedDict
+from functools import wraps
 from pathlib import Path
 from typing import Any, Dict, Optional, List
 from qrt.util.util import qml_details, make_flowchart
-from flask import Flask, render_template, request, json, send_file
+from flask import Flask, render_template, request, json, send_file, session, flash
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
 from werkzeug.utils import secure_filename, redirect
 from tempfile import TemporaryDirectory
 import time
@@ -18,8 +21,24 @@ app.config['upload_dir'] = TemporaryDirectory()
 app.config['SESSION_TYPE'] = 'filesystem'
 app.secret_key = secrets.token_hex(16)
 
+flask_user = os.environ.get('FLASK_USER')
+flask_pass = os.environ.get('FLASK_PASS')
+
+limiter = Limiter(app=app, key_func=get_remote_address)
+
 ALLOWED_EXTENSIONS = ['xml']
 FILE_DICT = None
+
+
+def login_restricted(func):
+    @wraps(func)
+    def func_wrapper(*args, **kwargs):
+        if not session.get('logged_in'):
+            return render_template('login.html')
+        else:
+            return func(*args, **kwargs)
+
+    return func_wrapper
 
 
 def randstr(n, alphabet=hexdigits):
@@ -48,12 +67,50 @@ def file_dict():
     return FILE_DICT
 
 
+@app.errorhandler(404)
+def page_not_found(e):
+    return index()
+
+
+@app.errorhandler(429)
+def too_many_requests(e):
+    flash(f'too many login attempts (>{e.description})')
+    return index()
+
+
 @app.route('/')
+@login_restricted
 def index():
+    # if not session.get('logged_in'):
+    #     return render_template('login.html')
     return redirect('upload')
 
 
+@app.route('/login', methods=['POST'])
+@limiter.limit("100/day")
+@limiter.limit("10/minute")
+def do_login():
+    if flask_user is None or flask_pass is None:
+        flash('no users have been set, login is not possible')
+        return index()
+    if request.form['username'] == flask_user and request.form['password'] == flask_pass:
+        session['logged_in'] = True
+    else:
+        flash('wrong password!')
+    return index()
+
+
+@app.route('/login', methods=['GET'])
+def get_login():
+    return index()
+
+
+def get_flashed_messages():
+    return session.get('_flashes')
+
+
 @app.route('/upload', methods=['GET'])
+@login_restricted
 def upload():
     uploaded_files = [{k: v for k, v in f.items() if k not in ['questionnaire']} for f in file_dict().values()]
     # uploaded_files = list(file_dict().values())
@@ -61,6 +118,7 @@ def upload():
 
 
 @app.route('/api/process/<file_id>', methods=['GET'])
+@login_restricted
 def process_file(file_id):
     if file_id not in file_dict():
         return app.response_class(
@@ -102,6 +160,7 @@ def process_file(file_id):
 
 
 @app.route('/api/details/<file_id>', methods=['GET'])
+@login_restricted
 def file_details(file_id):
     if file_id not in file_dict():
         return app.response_class(
@@ -131,6 +190,7 @@ def file_details(file_id):
 
 
 @app.route('/details/<file_id>', methods=['GET'])
+@login_restricted
 def details(file_id):
     if file_id not in file_dict():
         return app.response_class(
@@ -163,7 +223,6 @@ def serialize(obj):
     return obj.__dict__
 
 
-
 def prepare_dict_for_html(input_dict) -> Dict[str, List[str]]:
     details_data = OrderedDict()
     for k1, v1 in input_dict.items():
@@ -192,6 +251,7 @@ def prepare_dict_for_html(input_dict) -> Dict[str, List[str]]:
 
 
 @app.route('/flowchart/<file_id>', methods=['GET'])
+@login_restricted
 def flowchart(file_id):
     flowchart_i = file_id[file_id.rfind('_') + 1:]
     file_id = file_id[:file_id.rfind('_')]
@@ -215,6 +275,7 @@ def flowchart(file_id):
 
 
 @app.route('/api/upload', methods=['POST'])
+@login_restricted
 def upload_file():
     if 'file' not in request.files:
         return app.response_class(
@@ -244,6 +305,7 @@ def upload_file():
 
 
 @app.route('/api/remove/<file_id>', methods=['GET'])
+@login_restricted
 def remove_file(file_id):
     if file_id not in file_dict():
         return app.response_class(
@@ -262,6 +324,7 @@ def remove_file(file_id):
 
 
 @app.route('/remove/<file_id>', methods=['GET'])
+@login_restricted
 def remove_file_link(file_id):
     if file_id not in file_dict():
         return app.response_class(
