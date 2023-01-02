@@ -5,5 +5,5 @@ services:
     ports:
       - "8000:5000"
     environment:
-      FLASK_USER: "admin"
-      FLASK_PASS: "pass"
+      FLASK_USER: " "
+      FLASK_PASS: " "
