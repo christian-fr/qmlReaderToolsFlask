@@ -3,7 +3,7 @@ import copy
 from collections import defaultdict
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Optional, List, Dict, NewType, Union, Tuple, Any, Set
+from typing import Optional, List, Dict, NewType, Union, Tuple, Any
 import re
 from xml.etree import ElementTree
 from lxml.etree import ElementTree as lEt
@@ -196,7 +196,7 @@ class EnumValues:
 
 def transitions(page: ElementTree.Element) -> List[Transition]:
     transitions = page.find('./zofar:transitions', NS)
-    if transitions:
+    if transitions is not None and len(transitions) > 0:
         transitions_list = [t for t in transitions.getchildren() if not isinstance(t, _lC)]
         if transitions_list:
             try:
@@ -285,7 +285,7 @@ def process_trigger(trigger: ElementTree.Element) -> Union[TriggerVariable, Trig
 def process_triggers(page: ElementTree.Element) -> List[Union[TriggerVariable, TriggerAction, TriggerJsCheck]]:
     # gather all variable triggers
     triggers = page.find('./zofar:triggers', NS)
-    if triggers:
+    if triggers is not None and len(triggers) > 0:
         # variable triggers
         trig_list = page.findall('./zofar:triggers/*', NS)
         if trig_list:
@@ -435,7 +435,7 @@ def body_questions_vars_lxml(page: _lE):
 
 
 def body_questions_vars(page: _lE) -> Tuple[List[str], Dict[str, str]]:
-    page_uid = page.attrib['uid']
+    # page_uid = page.attrib['uid']
     question_type_list = []
     variable_dict = {}
     processed_list = []
@@ -452,6 +452,7 @@ def body_questions_vars(page: _lE) -> Tuple[List[str], Dict[str, str]]:
                         else:
                             raise NotImplementedError(f'Nested question of type "{sq.tag=}" not implemented!')
 
+                # add question type, remove NS from tag
                 question_type_list.append(element.tag.replace(ZOFAR_NS, ''))
 
                 if element.tag == ZOFAR_SINGLE_CHOICE_TAG:
@@ -470,7 +471,7 @@ def body_questions_vars(page: _lE) -> Tuple[List[str], Dict[str, str]]:
                     pass
                 elif element.tag == ZOFAR_CALENDAR_EPISODES_TABLE_TAG:
                     pass
-        return question_type_list
+        return question_type_list, variable_dict
 
     if page.find('./zofar:body', NS) is not None:
         assert True
@@ -490,8 +491,8 @@ def body_questions_vars(page: _lE) -> Tuple[List[str], Dict[str, str]]:
                             if 'variable' in qo_element.attrib:
                                 variable_dict[qo_element.attrib['variable']] = 'string'
 
-                question_type = element.tag.replace(ZOFAR_NS, '')
-                question_type_list.append(question_type)
+                # add question type, remove NS from tag
+                question_type_list.append(element.tag.replace(ZOFAR_NS, ''))
 
                 if element.tag == ZOFAR_QUESTION_OPEN_TAG:
                     if 'variable' in element.attrib:
@@ -677,30 +678,30 @@ def read_xml(xml_path: Path) -> Questionnaire:
 
         q.pages.append(p)
 
-    for page in xml_root.findall('./zofar:page', NS):
-        continue
-        p = Page(page.attrib['uid'])
-
-        p.transitions = transitions(page)
-        p.var_ref = var_refs(page)
-        p._triggers_list = process_triggers(page)
-
-        p.triggers_vars = [trig.variable for trig in p.triggers_list if isinstance(trig, TriggerVariable)]
-        p.trig_json_save = trig_json_vars_save(page)
-        p.trig_json_load = trig_json_vars_load(page)
-        p.trig_json_reset = trig_json_vars_reset(page)
-        p.visible_conditions = visible_conditions(page)
-
-        p.trig_redirect_on_exit_true = redirect_triggers(p.triggers_list, 'true')
-        p.trig_redirect_on_exit_false = redirect_triggers(p.triggers_list, 'false')
-
-        q.pages.append(p)
+    # for page in xml_root.findall('./zofar:page', NS):
+    #     continue
+    #     p = Page(page.attrib['uid'])
+    #
+    #     p.transitions = transitions(page)
+    #     p.var_ref = var_refs(page)
+    #     p._triggers_list = process_triggers(page)
+    #
+    #     p.triggers_vars = [trig.variable for trig in p.triggers_list if isinstance(trig, TriggerVariable)]
+    #     p.trig_json_save = trig_json_vars_save(page)
+    #     p.trig_json_load = trig_json_vars_load(page)
+    #     p.trig_json_reset = trig_json_vars_reset(page)
+    #     p.visible_conditions = visible_conditions(page)
+    #
+    #     p.trig_redirect_on_exit_true = redirect_triggers(p.triggers_list, 'true')
+    #     p.trig_redirect_on_exit_false = redirect_triggers(p.triggers_list, 'false')
+    #
+    #     q.pages.append(p)
 
     return q
 
 
 def main(xml_file: str):
-    raise NotImplementedError('CF 2022-12-21')
+    q = read_xml(Path(xml_file))
     pass
 
 
