@@ -3,7 +3,7 @@ import secrets
 from collections import OrderedDict
 from functools import wraps
 from pathlib import Path
-from typing import Any, Dict, Optional, List
+from typing import Any, Dict, Optional, List, Union
 from qrt.util.util import qml_details, make_flowchart
 from flask import Flask, render_template, request, json, send_file, session, flash
 from flask_limiter import Limiter
@@ -21,8 +21,17 @@ app.config['upload_dir'] = TemporaryDirectory()
 app.config['SESSION_TYPE'] = 'filesystem'
 app.secret_key = secrets.token_hex(16)
 
-flask_user = os.environ.get('FLASK_USER')
-flask_pass = os.environ.get('FLASK_PASS')
+
+def check_credentials(cred: Union[str, None]):
+    if cred is not None:
+        cred = cred.strip()
+        if len(cred) == 0:
+            cred = None
+    return cred
+
+
+flask_user = check_credentials(os.environ.get('FLASK_USER'))
+flask_pass = check_credentials(os.environ.get('FLASK_PASS'))
 
 limiter = Limiter(app=app, key_func=get_remote_address)
 
