@@ -2,7 +2,10 @@ from collections import defaultdict
 from dataclasses import dataclass, field
 from typing import List, Dict, Optional, Tuple, NewType, Union
 # noinspection PyProtectedMember
-from lxml.etree import _Element as _lE, ElementTree as lEt
+from lxml.etree import _Element as _lE, ElementTree as lEt, tostring as l_to_string
+from qrt.util.qmlgen import *
+
+
 
 ON_EXIT_DEFAULT = 'true'
 DIRECTION_DEFAULT = 'forward'
@@ -72,6 +75,8 @@ class HeaderObject(ZofarPageObject):
     type: str
     content: str
 
+    def gen_xml(self):
+        raise NotImplementedError
 
 # noinspection PyDataclass
 @dataclass(kw_only=True)
@@ -90,6 +95,8 @@ class HeaderText(HeaderObject):
 class HeaderQuestion(HeaderObject):
     type: str = 'question'
 
+    def gen_xml(self):
+        return QUE(self.content, uid=self.uid)
 
 # noinspection PyDataclass
 @dataclass(kw_only=True)
@@ -125,6 +132,11 @@ class AnswerOption(ZofarPageObject):
     value: Optional[str]
     missing: Optional[bool] = False
     var_ref: Optional[VarRef] = None
+    attached_open_list: List[ZofarQuestionOpen] = field(default_factory=list)
+
+    def gen_xml(self):
+        x = E()
+        pass
 
 
 # noinspection PyDataclass
@@ -250,6 +262,23 @@ class ZofarQuestionSCMatrix(Question):
     response_domain: MatrixResponseDomain
     type: str = 'matrixSingleChoice'
     var_ref = None
+
+    def gen_xml(self):
+        header_list = []
+        for header in self.header_list:
+            header_list.append(header.gen_xml())
+
+        rd_header_title_list = []
+
+        for header_title in self.title_header:
+            TITLE(header_titleuid=header_title.uid)
+        rd_item_list = []
+        for item in self.response_domain.item_list:
+            rd_item_list.append(IT(uid=item.uid, block="true", visible=item.visible))
+
+        x = MQSC(HEADER(*header_list), RD(), uid=self.uid, block="true")
+        y = l_to_string(x, pretty_print=True, encoding='utf-8').decode('utf-8')
+        pass
 
 
 @dataclass(kw_only=True)
@@ -420,7 +449,7 @@ def example_mqsc():
 
     msc = ZofarQuestionSCMatrix(uid='msc', header_list=header_list, response_domain=matrix_rd,
                                 title_header=title_header)
-
+    msc.gen_xml()
     return msc
 
 

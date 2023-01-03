@@ -1,12 +1,9 @@
 from lxml.builder import ElementMaker  # lxml only !
-import lxml.etree
 
-import qrt.util.questionnaire
-from qrt.util.qml import ZOFAR_NS, NS
-from qrt.util.questionnaire import example_mqsc
+ZOFAR_NS_URI = "http://www.his.de/zofar/xml/questionnaire"
+NS = {"zofar": ZOFAR_NS_URI}
 
-NS = {'zofar': NS['zofar']}
-E = ElementMaker(namespace=NS['zofar'], nsmap=NS)
+E = ElementMaker(namespace=ZOFAR_NS_URI, nsmap=NS)
 
 PAGE = E.page
 HEADER = E.header
@@ -27,10 +24,3 @@ TEXT = E.text
 INS = E.instruction
 INT = E.introduction
 QUE = E.question
-
-if __name__ == '__main__':
-    mqsc_obj = qrt.util.questionnaire.example_mqsc()
-
-    # matrix single choice
-    mqsc = MQSC()
-    print(lxml.etree.tostring(mqsc, pretty_print=True))
