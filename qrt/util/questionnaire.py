@@ -379,7 +379,7 @@ class Questionnaire:
         return vars_dict
 
 
-if __name__ == '__main__':
+def example_mqsc():
     header_list = [HeaderQuestion(uid="q1", content="Was halten Ihre Eltern und Ihre Freunde von Ihrem Studienfach?")]
     header_list_it = [
         HeaderQuestion(uid="q1", content="Meine Eltern finden, dass ich ein gutes Studienfach gewählt habe.")]
@@ -418,7 +418,11 @@ if __name__ == '__main__':
 
     matrix_rd.item_list = it_list
 
-    msc = ZofarQuestionSCMatrix(uid='msc', header_list=header_list, response_domain=matrix_rd, title_header=title_header)
+    msc = ZofarQuestionSCMatrix(uid='msc', header_list=header_list, response_domain=matrix_rd,
+                                title_header=title_header)
+
+    return msc
 
 
-    pass
+if __name__ == '__main__':
+    example_mqsc()
