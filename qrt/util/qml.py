@@ -1,14 +1,17 @@
 import argparse
 import copy
 from collections import defaultdict
-from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Optional, List, Dict, NewType, Union, Tuple, Any
+from typing import Optional, List, Dict, Union, Any
 import re
 from xml.etree import ElementTree
 from lxml.etree import ElementTree as lEt
 from lxml.etree import _Element as _lE
 from lxml.etree import _Comment as _lC
+
+from qrt.util.questionnaire import Page, Questionnaire, Variable, Transition, Trigger, TriggerRedirect, \
+    TriggerVariable, TriggerAction, TriggerJsCheck, VarRef, ON_EXIT_DEFAULT, CONDITION_DEFAULT, \
+    Question, Section
 
 ZOFAR_NS = "{http://www.his.de/zofar/xml/questionnaire}"
 ZOFAR_NS_URI = "http://www.his.de/zofar/xml/questionnaire"
@@ -20,6 +23,7 @@ NS = {
 ZOFAR_QUESTIONNAIRE_TAG = f"{ZOFAR_NS}questionnaire"
 ZOFAR_NAME_TAG = f"{ZOFAR_NS}name"
 ZOFAR_PAGE_TAG = f"{ZOFAR_NS}page"
+# love<3
 ZOFAR_TRANSITIONS_TAG = f"{ZOFAR_NS}transitions"
 ZOFAR_TRANSITION_TAG = f"{ZOFAR_NS}transition"
 ZOFAR_TRIGGERS_TAG = f"{ZOFAR_NS}triggers"
@@ -50,9 +54,6 @@ ZOFAR_MATRIX_SINGLE_CHOICE_TAG = f"{ZOFAR_NS}matrixQuestionSingleChoice"
 ZOFAR_MATRIX_MULTIPLE_CHOICE_TAG = f"{ZOFAR_NS}matrixQuestionMultipleChoice"
 DISPLAY_NAMESPACE = "{http://www.dzhw.eu/zofar/xml/display}"
 ZOFAR_DISPLAY_TEXT_TAG = f"{DISPLAY_NAMESPACE}text"
-ON_EXIT_DEFAULT = 'true'
-DIRECTION_DEFAULT = 'forward'
-CONDITION_DEFAULT = 'true'
 
 ZOFAR_QUESTION_ELEMENTS = [ZOFAR_QUESTION_OPEN_TAG, ZOFAR_SINGLE_CHOICE_TAG, ZOFAR_MULTIPLE_CHOICE_TAG,
                            ZOFAR_MATRIX_MULTIPLE_CHOICE_TAG, ZOFAR_MATRIX_QUESTION_OPEN_TAG,
@@ -79,119 +80,6 @@ def flatten(ll):
     :return: flattened list
     """
     return [it for li in ll for it in li]
-
-
-@dataclass(kw_only=True)
-class ZofarPageObject:
-    uid: str
-    parent_uid: str
-    full_uid: str
-    visible: str
-
-
-@dataclass(kw_only=True)
-class Variable:
-    name: str
-    type: str
-
-
-@dataclass(kw_only=True)
-class ZofarQuestion(ZofarPageObject):
-    type: Optional[str]
-    header_list: list
-    var_ref: Optional[Variable]
-
-
-@dataclass(kw_only=True)
-class Transition:
-    target_uid: str
-    condition: Optional[str] = None
-    # condition as spring expression that has to be fulfilled on order to follow the transition
-
-
-# forward declaration of class TriggerVariable
-TriggerVariable = NewType('TriggerVariable', None)
-
-
-@dataclass(kw_only=True)
-class Trigger:
-    condition: Optional[str] = 'true'
-    children: Optional[TriggerVariable] = None
-    on_exit: Optional[str] = ON_EXIT_DEFAULT
-    direction: Optional[str] = DIRECTION_DEFAULT
-
-
-# noinspection PyDataclass
-@dataclass(kw_only=True)
-class TriggerRedirect(Trigger):
-    target_cond_list: List[Tuple[str, str]]
-
-
-# noinspection PyDataclass
-@dataclass(kw_only=True)
-class TriggerVariable(Trigger):
-    variable: str
-    value: str
-
-
-# noinspection PyDataclass
-@dataclass(kw_only=True)
-class TriggerAction(Trigger):
-    command: str
-
-
-# noinspection PyDataclass
-@dataclass(kw_only=True)
-class TriggerJsCheck(Trigger):
-    variable: str
-    x_var: str
-    y_var: str
-
-
-@dataclass(kw_only=True)
-class VarRef:
-    variable: Variable
-    # list of conditions (as spring expression) that have to be fulfilled in order to reach the variable reference
-    condition: List[str] = field(default_factory=list)
-
-    def __str__(self):
-        return f'{self.variable.name}: {self.variable.type}; {self.condition}'
-
-    def __gt__(self, other):
-        if not isinstance(other, VarRef):
-            raise TypeError("can only compare to other VarRef objects")
-        return self.variable.name > other.variable.name
-
-    def __lt__(self, other):
-        if not isinstance(other, VarRef):
-            raise TypeError("can only compare to other VarRef objects")
-        return self.variable.name > other.variable.name
-
-    def __ge__(self, other):
-        if not isinstance(other, VarRef):
-            raise TypeError("can only compare to other VarRef objects")
-        return self.variable.name >= other.variable.name
-
-    def __le__(self, other):
-        if not isinstance(other, VarRef):
-            raise TypeError("can only compare to other VarRef objects")
-        return self.variable.name <= other.variable.name
-
-    def __dict__(self):
-        return {self.variable.name: (self.variable.type, self.condition)}
-
-
-@dataclass(kw_only=True)
-class EnumValue:
-    uid: str
-    value: int
-    label: str
-
-
-@dataclass(kw_only=True)
-class EnumValues:
-    variable: Variable
-    values: List[EnumValue]
 
 
 def transitions(page: ElementTree.Element) -> List[Transition]:
@@ -401,7 +289,7 @@ def body_vars(page: ElementTree.Element) -> Dict[str, str]:
     return {}
 
 
-def find_questions(parent: _lE, parent_full_uid: str, question_list: Optional[List[ZofarQuestion]] = None) -> Any:
+def find_questions(parent: _lE, parent_full_uid: str, question_list: Optional[List[Question]] = None) -> Any:
     if question_list is None:
         question_list = []
     assert True
@@ -434,10 +322,9 @@ def body_questions_vars_lxml(page: _lE):
     return question_type_list, variable_dict
 
 
-def body_questions_vars(page: _lE) -> Tuple[List[str], Dict[str, str]]:
+def body_questions_vars(page: _lE) -> List[str]:
     # page_uid = page.attrib['uid']
     question_type_list = []
-    variable_dict = {}
     processed_list = []
 
     body_element = page.find(ZOFAR_BODY_TAG, NS)
@@ -455,6 +342,8 @@ def body_questions_vars(page: _lE) -> Tuple[List[str], Dict[str, str]]:
                 # add question type, remove NS from tag
                 question_type_list.append(element.tag.replace(ZOFAR_NS, ''))
 
+                question_types_classes_dict = {qu.type: qu for qu in Question.__subclasses__()}
+                section_type_class_dict = {Section.type: Section}
                 if element.tag == ZOFAR_SINGLE_CHOICE_TAG:
                     pass
                 elif element.tag == ZOFAR_MATRIX_SINGLE_CHOICE_TAG:
@@ -471,7 +360,7 @@ def body_questions_vars(page: _lE) -> Tuple[List[str], Dict[str, str]]:
                     pass
                 elif element.tag == ZOFAR_CALENDAR_EPISODES_TABLE_TAG:
                     pass
-        return question_type_list, variable_dict
+        return question_type_list
 
     if page.find('./zofar:body', NS) is not None:
         assert True
@@ -489,118 +378,50 @@ def body_questions_vars(page: _lE) -> Tuple[List[str], Dict[str, str]]:
                             question_type_list.append('questionOpen (attached)')
                             processed_list.append(qo_element)
                             if 'variable' in qo_element.attrib:
-                                variable_dict[qo_element.attrib['variable']] = 'string'
+                                raise NotImplementedError
+                                # variable_dict[qo_element.attrib['variable']] = 'string'
 
                 # add question type, remove NS from tag
                 question_type_list.append(element.tag.replace(ZOFAR_NS, ''))
 
-                if element.tag == ZOFAR_QUESTION_OPEN_TAG:
-                    if 'variable' in element.attrib:
-                        if element.attrib['variable'] in variable_dict:
-                            if variable_dict[element.attrib['variable']] != 'string':
-                                raise ValueError(f'Key has wrong type: variable '
-                                                 f'"{element.attrib["variable"]}" found in variable_dict as '
-                                                 f'"{variable_dict[element.attrib["variable"]]}", '
-                                                 f'but also as string in questionOpen!')
-                        else:
-                            variable_dict[element.attrib['variable']] = 'string'
-                else:
-                    sub_elements = [e for e in element.iter() if e.tag != ZOFAR_QUESTION_OPEN_TAG]
-                    for sub_element in sub_elements:
-                        if hasattr(sub_element, 'iter'):
-                            for sub_sub_element in sub_element.iter():
-                                if hasattr(sub_sub_element, 'attrib'):
-                                    if 'variable' in sub_sub_element.attrib:
-                                        if sub_sub_element.tag in [ZOFAR_SINGLE_CHOICE_TAG,
-                                                                   ZOFAR_MATRIX_SINGLE_CHOICE_TAG]:
-                                            if sub_sub_element.attrib['variable'] in variable_dict:
-                                                if variable_dict[
-                                                    sub_sub_element.attrib['variable']] != 'singleChoiceAnswerOption':
-                                                    raise ValueError(f'Key has wrong type: variable '
-                                                                     f'"{sub_sub_element.attrib["variable"]}" found in variable_dict as '
-                                                                     f'"{variable_dict[sub_sub_element.attrib["variable"]]}", '
-                                                                     f'but also as singleChoiceAnswerOption!')
-                                            variable_dict[
-                                                sub_sub_element.attrib['variable']] = 'singleChoiceAnswerOption'
-                                        if sub_sub_element.tag in [ZOFAR_MULTIPLE_CHOICE_TAG,
-                                                                   ZOFAR_MATRIX_MULTIPLE_CHOICE_TAG]:
-                                            if sub_sub_element.attrib['variable'] in variable_dict:
-                                                if variable_dict[sub_sub_element.attrib['variable']] != 'boolean':
-                                                    raise ValueError(f'Key has wrong type: variable '
-                                                                     f'"{sub_sub_element.attrib["variable"]}" found in variable_dict as '
-                                                                     f'"{variable_dict[sub_sub_element.attrib["variable"]]}", '
-                                                                     f'but also as boolean!')
-                                            variable_dict[sub_sub_element.attrib['variable']] = 'boolean'
-    return question_type_list, variable_dict
-
-
-@dataclass
-class Page:
-    uid: str
-    body_vars: List[VarRef] = field(default_factory=dict)
-    body_questions: List[str] = field(default_factory=list)
-    transitions: List[Transition] = field(default_factory=list)
-    var_ref: List[str] = field(default_factory=list)
-    _triggers_list: List[Trigger] = field(default_factory=list)
-    triggers_vars: List[str] = field(default_factory=list)
-    triggers_json_save: List[str] = field(default_factory=list)
-    triggers_json_load: List[str] = field(default_factory=list)
-    triggers_json_reset: List[str] = field(default_factory=list)
-    visible_conditions: List[str] = field(default_factory=list)
-    trig_redirect_on_exit_true: List[TriggerRedirect] = field(default_factory=list)
-    trig_redirect_on_exit_false: List[TriggerRedirect] = field(default_factory=list)
-    warnings: List[str] = field(default_factory=list)
-    source_element: _lE = field(default_factory=_lE)
-
-    @property
-    def triggers_list(self):
-        return self._triggers_list
-
-
-@dataclass
-class Questionnaire:
-    pages: List[Page] = field(default_factory=list)
-    var_declarations: Dict[str, Variable] = field(default_factory=list)
-    warnings: List[str] = field(default_factory=list)
-    xml_root: lEt = field(default_factory=lEt)
-
-    def body_vars_per_page_dict(self):
-        return {p.uid: p.body_vars for p in self.pages}
-
-    def all_page_questions_dict(self):
-        return {p.uid: p.body_questions for p in self.pages}
-
-    def all_vars_declared(self) -> Dict[str, str]:
-        return {var_name: var.type for var_name, var in self.var_declarations.items()}
-
-    def vars_declared_not_used(self) -> Dict[str, str]:
-        names_missing = set(self.all_vars_declared().keys()).difference(self.all_page_body_vars().keys())
-        return {varname: self.all_vars_declared()[varname] for varname in names_missing}
-
-    def vars_declared_used_inconsistent(self) -> Dict[str, List[str]]:
-        results = defaultdict(set)
-        for varname, vartype in self.all_page_body_vars().items():
-            if varname in self.all_vars_declared().keys():
-                if vartype != self.all_vars_declared()[varname]:
-                    results[varname].add(vartype)
-                    results[varname].add(self.all_vars_declared()[varname])
-        return {k: list(v) for k, v in results.items()}
-
-    def vars_used_not_declared(self) -> Dict[str, str]:
-        names_missing = set(self.all_page_body_vars().keys()).difference(self.all_vars_declared().keys())
-        return {varname: self.all_page_body_vars()[varname] for varname in names_missing}
-
-    def all_page_body_vars(self) -> Dict[str, str]:
-        vars_dict = {}
-        for page, var_list in self.body_vars_per_page_dict().items():
-            for var_ref in var_list:
-                if var_ref.variable.name in vars_dict:
-                    if var_ref.variable.type != vars_dict[var_ref.variable.name]:
-                        self.warnings.append(
-                            f'variable "{var_ref.variable.name}" already found as type {vars_dict[var_ref.variable.name]}, found on page "{page}" as type "{var_ref.variable.type}"')
-                else:
-                    vars_dict[var_ref.variable.name] = var_ref.variable.type
-        return vars_dict
+                # if element.tag == ZOFAR_QUESTION_OPEN_TAG:
+                #     if 'variable' in element.attrib:
+                #         if element.attrib['variable'] in variable_dict:
+                #             if variable_dict[element.attrib['variable']] != 'string':
+                #                 raise ValueError(f'Key has wrong type: variable '
+                #                                  f'"{element.attrib["variable"]}" found in variable_dict as '
+                #                                  f'"{variable_dict[element.attrib["variable"]]}", '
+                #                                  f'but also as string in questionOpen!')
+                #         else:
+                #             variable_dict[element.attrib['variable']] = 'string'
+    #             else:
+    #                 sub_elements = [e for e in element.iter() if e.tag != ZOFAR_QUESTION_OPEN_TAG]
+    #                 for sub_element in sub_elements:
+    #                     if hasattr(sub_element, 'iter'):
+    #                         for sub_sub_element in sub_element.iter():
+    #                             if hasattr(sub_sub_element, 'attrib'):
+    #                                 if 'variable' in sub_sub_element.attrib:
+    #                                     if sub_sub_element.tag in [ZOFAR_SINGLE_CHOICE_TAG,
+    #                                                                ZOFAR_MATRIX_SINGLE_CHOICE_TAG]:
+    #                                         if sub_sub_element.attrib['variable'] in variable_dict:
+    #                                             if variable_dict[
+    #                                                 sub_sub_element.attrib['variable']] != 'singleChoiceAnswerOption':
+    #                                                 raise ValueError(f'Key has wrong type: variable '
+    #                                                                  f'"{sub_sub_element.attrib["variable"]}" found in variable_dict as '
+    #                                                                  f'"{variable_dict[sub_sub_element.attrib["variable"]]}", '
+    #                                                                  f'but also as singleChoiceAnswerOption!')
+    #                                         variable_dict[
+    #                                             sub_sub_element.attrib['variable']] = 'singleChoiceAnswerOption'
+    #                                     if sub_sub_element.tag in [ZOFAR_MULTIPLE_CHOICE_TAG,
+    #                                                                ZOFAR_MATRIX_MULTIPLE_CHOICE_TAG]:
+    #                                         if sub_sub_element.attrib['variable'] in variable_dict:
+    #                                             if variable_dict[sub_sub_element.attrib['variable']] != 'boolean':
+    #                                                 raise ValueError(f'Key has wrong type: variable '
+    #                                                                  f'"{sub_sub_element.attrib["variable"]}" found in variable_dict as '
+    #                                                                  f'"{variable_dict[sub_sub_element.attrib["variable"]]}", '
+    #                                                                  f'but also as boolean!')
+    #                                         variable_dict[sub_sub_element.attrib['variable']] = 'boolean'
+    return question_type_list
 
 
 def get_question_parent(element: _lE) -> str:

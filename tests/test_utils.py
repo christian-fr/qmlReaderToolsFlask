@@ -1,7 +1,7 @@
 from unittest import TestCase
 from tests.context import test_qml_path, test_questionnaire
 from qrt.util.util import qml_details, all_zofar_functions
-from qrt.util.qml import Questionnaire
+from qrt.util.questionnaire import Questionnaire
 
 
 class TestUtils(TestCase):
