@@ -12,14 +12,19 @@ CONDITION_DEFAULT = 'true'
 TriggerVariable = NewType('TriggerVariable', None)
 ZofarPageObject = NewType('ZofarPageObject', None)
 Section = NewType('Section', None)
+ZofarQuestionOpen = NewType('ZofarQuestionOpen', None)
+ResponseDomain = NewType('ResponseDomain', None)
+
+
+# Item = NewType('Item', None)
 
 
 @dataclass(kw_only=True)
 class ZofarPageObject:
     uid: str
-    parent_uid: str
-    full_uid: str
-    visible: str
+    # parent_uid: Optional[str] = None
+    # full_uid: Optional[str] = None
+    visible: str = 'true'
 
 
 @dataclass(kw_only=True)
@@ -29,73 +34,193 @@ class Variable:
 
 
 @dataclass(kw_only=True)
+class VarRef:
+    variable: Variable
+    # list of conditions (as spring expression) that have to be fulfilled in order to reach the variable reference
+    condition: List[str] = field(default_factory=list)
+
+    def __str__(self):
+        return f'{self.variable.name}: {self.variable.type}; {self.condition}'
+
+    def __gt__(self, other):
+        if not isinstance(other, VarRef):
+            raise TypeError("can only compare to other VarRef objects")
+        return self.variable.name > other.variable.name
+
+    def __lt__(self, other):
+        if not isinstance(other, VarRef):
+            raise TypeError("can only compare to other VarRef objects")
+        return self.variable.name > other.variable.name
+
+    def __ge__(self, other):
+        if not isinstance(other, VarRef):
+            raise TypeError("can only compare to other VarRef objects")
+        return self.variable.name >= other.variable.name
+
+    def __le__(self, other):
+        if not isinstance(other, VarRef):
+            raise TypeError("can only compare to other VarRef objects")
+        return self.variable.name <= other.variable.name
+
+    def __dict__(self):
+        return {self.variable.name: (self.variable.type, self.condition)}
+
+
+# noinspection PyDataclass
+@dataclass(kw_only=True)
 class HeaderObject(ZofarPageObject):
     type: str
     content: str
 
 
+# noinspection PyDataclass
 @dataclass(kw_only=True)
-class HeaderTitle(ZofarPageObject):
+class HeaderTitle(HeaderObject):
     type: str = 'title'
 
 
+# noinspection PyDataclass
 @dataclass(kw_only=True)
-class HeaderText(ZofarPageObject):
+class HeaderText(HeaderObject):
     type: str = 'text'
 
 
+# noinspection PyDataclass
 @dataclass(kw_only=True)
-class HeaderQuestion(ZofarPageObject):
+class HeaderQuestion(HeaderObject):
     type: str = 'question'
 
 
+# noinspection PyDataclass
 @dataclass(kw_only=True)
-class HeaderIntroduction(ZofarPageObject):
+class HeaderIntroduction(HeaderObject):
     type: str = 'introduction'
 
 
+# noinspection PyDataclass
 @dataclass(kw_only=True)
-class HeaderInstruction(ZofarPageObject):
+class HeaderInstruction(HeaderObject):
     type: str = 'instruction'
 
 
+# noinspection PyDataclass
 @dataclass(kw_only=True)
 class Section(ZofarPageObject):
     header_list: list
-    children: Optional[List[Union[ZofarPageObject, Section]]]
+    children: List[Union[ZofarPageObject, Section]] = field(default_factory=list)
     type: str = 'section'
 
 
+# noinspection PyDataclass
+@dataclass(kw_only=True)
+class ResponseDomain:
+    uid: str
+    header_list: List[HeaderObject] = field(default_factory=list)
+
+
+# noinspection PyDataclass
 @dataclass(kw_only=True)
 class AnswerOption(ZofarPageObject):
     label: Optional[str]
     value: Optional[str]
     missing: Optional[bool] = False
+    var_ref: Optional[VarRef] = None
 
 
+# noinspection PyDataclass
+@dataclass(kw_only=True)
+class MCAnswerOption(AnswerOption):
+    var_ref: VarRef
+
+
+# noinspection PyDataclass
+@dataclass(kw_only=True)
+class SCResponseDomain(ResponseDomain):
+    var_ref: VarRef
+    # for "dropDown"
+    rd_type: Optional[str] = None
+    ao_list: List[AnswerOption] = field(default_factory=list)
+
+    def get_var_refs(self):
+        raise NotImplementedError
+
+
+# noinspection PyDataclass
+@dataclass(kw_only=True)
+class MCResponseDomain(ResponseDomain):
+    ao_list: List[MCAnswerOption] = field(default_factory=list)
+
+    def get_var_refs(self):
+        raise NotImplementedError
+
+
+# noinspection PyDataclass
 @dataclass(kw_only=True)
 class Item(ZofarPageObject):
-    type: Optional[str]
     header_list: List[HeaderObject]
-    var_ref: Optional[Variable]
-    children: Optional[List[AnswerOption]]
+    response_domain: ResponseDomain
 
 
+# noinspection PyDataclass
+@dataclass(kw_only=True)
+class QOItem(Item):
+    var_ref: Optional[VarRef]
+    response_domain: SCResponseDomain
+
+    def get_var_refs(self):
+        raise NotImplementedError
+
+
+# noinspection PyDataclass
+@dataclass(kw_only=True)
+class SCItem(ZofarPageObject):
+    var_ref: VarRef
+    response_domain: SCResponseDomain
+
+    def get_var_refs(self):
+        raise NotImplementedError
+
+
+# noinspection PyDataclass
+@dataclass(kw_only=True)
+class MCItem(ZofarPageObject):
+    response_domain: MCResponseDomain
+
+    def get_var_refs(self):
+        raise NotImplementedError
+
+
+# noinspection PyDataclass
+@dataclass(kw_only=True)
+class MatrixResponseDomain(ResponseDomain):
+    no_response_options: Optional[str]
+    # for singleChoice -> "dropDown"
+    rd_type: Optional[str] = None
+    item_list: List[Union[MCItem, SCItem]] = field(default_factory=list)
+
+    def get_var_refs(self):
+        return [it.get_var_refs() for it in self.item_list]
+
+
+# noinspection PyDataclass
 @dataclass(kw_only=True)
 class Question(ZofarPageObject):
     type: Optional[str]
-    header_list: List[HeaderObject]
-    var_ref: Optional[Variable]
-    children: Optional[List[ZofarPageObject]]
+    var_ref: Optional[VarRef] = None
+    header_list: List[HeaderObject] = field(default_factory=list)
 
 
+# noinspection PyDataclass
 @dataclass(kw_only=True)
 class ZofarQuestionOpen(Question):
+    var_ref: VarRef
     type: str = 'questionOpen'
 
 
+# noinspection PyDataclass
 @dataclass(kw_only=True)
 class ZofarQuestionSC(Question):
+    var_ref: VarRef
     ao_list: List[AnswerOption]
     type: str = 'questionSingleChoice'
 
@@ -105,16 +230,26 @@ class ZofarQuestionMC(Question):
     type: str = 'multipleChoice'
 
 
+# noinspection PyDataclass
 @dataclass(kw_only=True)
 class ZofarQuestionMCMatrix(Question):
+    response_domain: MatrixResponseDomain
     title_header: List[ZofarPageObject]
     missing_header: List[ZofarPageObject]
     type: str = 'matrixMultipleChoice'
 
+    @property
+    def get_var_refs(self) -> List[VarRef]:
+        return [f.var_ref for f in self.children if f.var_ref is not None]
 
+
+# noinspection PyDataclass
 @dataclass(kw_only=True)
 class ZofarQuestionSCMatrix(Question):
+    title_header: List[ZofarPageObject]
+    response_domain: MatrixResponseDomain
     type: str = 'matrixSingleChoice'
+    var_ref = None
 
 
 @dataclass(kw_only=True)
@@ -157,39 +292,6 @@ class TriggerJsCheck(Trigger):
     variable: str
     x_var: str
     y_var: str
-
-
-@dataclass(kw_only=True)
-class VarRef:
-    variable: Variable
-    # list of conditions (as spring expression) that have to be fulfilled in order to reach the variable reference
-    condition: List[str] = field(default_factory=list)
-
-    def __str__(self):
-        return f'{self.variable.name}: {self.variable.type}; {self.condition}'
-
-    def __gt__(self, other):
-        if not isinstance(other, VarRef):
-            raise TypeError("can only compare to other VarRef objects")
-        return self.variable.name > other.variable.name
-
-    def __lt__(self, other):
-        if not isinstance(other, VarRef):
-            raise TypeError("can only compare to other VarRef objects")
-        return self.variable.name > other.variable.name
-
-    def __ge__(self, other):
-        if not isinstance(other, VarRef):
-            raise TypeError("can only compare to other VarRef objects")
-        return self.variable.name >= other.variable.name
-
-    def __le__(self, other):
-        if not isinstance(other, VarRef):
-            raise TypeError("can only compare to other VarRef objects")
-        return self.variable.name <= other.variable.name
-
-    def __dict__(self):
-        return {self.variable.name: (self.variable.type, self.condition)}
 
 
 @dataclass(kw_only=True)
@@ -275,3 +377,48 @@ class Questionnaire:
                 else:
                     vars_dict[var_ref.variable.name] = var_ref.variable.type
         return vars_dict
+
+
+if __name__ == '__main__':
+    header_list = [HeaderQuestion(uid="q1", content="Was halten Ihre Eltern und Ihre Freunde von Ihrem Studienfach?")]
+    header_list_it = [
+        HeaderQuestion(uid="q1", content="Meine Eltern finden, dass ich ein gutes Studienfach gewählt habe.")]
+
+    title_header = []
+    title_header.append(HeaderTitle(uid="ti1", content="trifft völlig zu"))
+    title_header.append(HeaderTitle(uid="ti2", content="trifft eher zu"))
+    title_header.append(HeaderTitle(uid="ti3", content="teils / teils"))
+    title_header.append(HeaderTitle(uid="ti4", content="trifft eher nicht zu"))
+    title_header.append(HeaderTitle(uid="ti5", content="trifft gar nicht zu"))
+
+    ao_list_it = []
+    ao_list_it.append(AnswerOption(uid='ao1', value="1", label="trifft völlig zu"))
+    ao_list_it.append(AnswerOption(uid='ao2', value="2", label="trifft eher zu"))
+    ao_list_it.append(AnswerOption(uid='ao3', value="3", label="teils / teils"))
+    ao_list_it.append(AnswerOption(uid='ao4', value="4", label="trifft eher nicht zu"))
+    ao_list_it.append(AnswerOption(uid='ao5', value="5", label="trifft gar nicht zu"))
+
+    matrix_rd = MatrixResponseDomain(uid="rd", no_response_options=str(len(ao_list_it)))
+
+    it_list = []
+
+    var_ref1 = VarRef(variable=Variable(name="foc680", type="singleChoiceAnswerOption"))
+    it1 = Item(uid="it1",
+               header_list=[HeaderQuestion(uid="q1",
+                                           content="Meine Eltern finden, dass ich ein gutes Studienfach gewählt habe.")],
+               response_domain=SCResponseDomain(uid="rd", ao_list=ao_list_it, var_ref=var_ref1))
+    it_list.append(it1)
+
+    var_ref2 = VarRef(variable=Variable(name="foc680", type="singleChoiceAnswerOption"))
+    it2 = Item(uid="it2",
+               header_list=[HeaderQuestion(uid="q1",
+                                           content="Meine Freundinnen und Freunde finden, dass ich ein gutes Studienfach gewählt habe.")],
+               response_domain=SCResponseDomain(uid="rd", ao_list=ao_list_it, var_ref=var_ref2))
+    it_list.append(it2)
+
+    matrix_rd.item_list = it_list
+
+    msc = ZofarQuestionSCMatrix(uid='msc', header_list=header_list, response_domain=matrix_rd, title_header=title_header)
+
+
+    pass
