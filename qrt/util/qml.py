@@ -556,6 +556,8 @@ class Page:
     def triggers_list(self):
         return self._triggers_list
 
+    def __str__(self):
+        return self.uid
 
 @dataclass
 class Questionnaire:

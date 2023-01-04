@@ -6,6 +6,7 @@ from qrt.util.qml import read_xml, Questionnaire, ZOFAR_PAGE_TAG, NS
 import networkx as nx
 import pygraphviz
 from lxml.etree import ElementTree as lEt
+from qrt.util.graph import prepare_digraph, topologically_sorted_nodes, remove_self_loops
 
 
 def flatten(ll: List[Union[List[Any], Tuple[Any]]]) -> Generator[Any, Any, None]:
@@ -29,12 +30,17 @@ def qml_details(q: Questionnaire, filename: Optional[str] = None) -> Dict[str, A
                 # else -> continue
             else:
                 vars_dict[var_ref.variable.name] = var_ref.variable.type
+    # ToDo: CF 2023-01-04: I do not use the above code - is it obsolete?
 
+    g = prepare_digraph(q)
+    g_cleaned = remove_self_loops(g)
+    topo_sorted_pages = topologically_sorted_nodes(g_cleaned)
     details_dict = {}
     if filename is not None:
         details_dict['filename'] = filename
     details_dict['warnings'] = warnings_list
-    details_dict['pages'] = [p.uid for p in q.pages]
+    details_dict['pages_order_declared'] = [p.uid for p in q.pages]
+    details_dict['pages_order_topological'] = topo_sorted_pages
     details_dict['page_questions'] = q.all_page_questions_dict()
     details_dict['all_variables_used_per_page'] = q.body_vars_per_page_dict()
     details_dict['all_variables_declared'] = q.all_vars_declared()
