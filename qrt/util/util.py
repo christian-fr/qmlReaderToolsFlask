@@ -17,7 +17,7 @@ def generate_var_declarations(var_data: Dict[str, str]):
     return [f'\t\t<zofar:variable name="{varname}" type="{vartype}"/>' for varname, vartype in var_data.items()]
 
 
-def qml_details(q: Questionnaire, filename: Optional[str] = None) -> Dict[str, Any]:
+def qml_details(q: Questionnaire, filename: Optional[str] = None) -> Dict[str, Dict[str, Union[str, list, dict]]]:
     warnings_list = []
     vars_dict = OrderedDict()
     for page, var_list in q.body_vars_per_page_dict().items():
@@ -35,22 +35,42 @@ def qml_details(q: Questionnaire, filename: Optional[str] = None) -> Dict[str, A
     g = prepare_digraph(q)
     g_cleaned = remove_self_loops(g)
     topo_sorted_pages = topologically_sorted_nodes(g_cleaned)
-    details_dict = {}
+
+    details_dict = OrderedDict()
     if filename is not None:
-        details_dict['filename'] = filename
-    details_dict['warnings'] = warnings_list
-    details_dict['pages_order_declared'] = [p.uid for p in q.pages]
-    details_dict['pages_order_topological'] = topo_sorted_pages
-    details_dict['page_questions'] = q.all_page_questions_dict()
-    details_dict['all_variables_used_per_page'] = q.body_vars_per_page_dict()
-    details_dict['all_variables_declared'] = q.all_vars_declared()
-    details_dict['inconsistent_vartypes'] = q.vars_declared_used_inconsistent()
-    details_dict['declared_but_unused_vars'] = q.vars_declared_not_used()
-    details_dict['used_but_undeclared_vars'] = q.vars_used_not_declared()
+        details_dict['filename'] = {'title': 'filename',
+                                    'data': filename}
+    details_dict['warnings'] = {'title': 'warnings',
+                                'data': warnings_list}
+    details_dict['inconsistent_vartypes'] = {'title': 'inconsistent variable types',
+                                             'description': 'variables that are being used as different types throughout the QML',
+                                             'data': q.vars_declared_used_inconsistent()}
+    details_dict['pages_order_declared'] = {'title': 'pages (in QML order)',
+                                            'description': 'according to order within QML',
+                                            'data': [p.uid for p in q.pages]}
+    details_dict['pages_order_topological'] = {'title': 'pages (in topological order)',
+                                               'description': 'empty list if topological sorting is not possible due to cycles',
+                                               'data': topo_sorted_pages}
+    details_dict['page_questions'] = {'title': 'questions per page',
+                                      'data': q.all_page_questions_dict()}
+    details_dict['all_variables_used_per_page'] = {'title': 'variables per page',
+                                                   'data': q.body_vars_per_page_dict()}
+    details_dict['all_variables_declared'] = {'title': 'variables declared',
+                                              'data': q.all_vars_declared()}
+    details_dict['declared_but_unused_vars'] = {'title': 'variables declared but not used',
+                                                'data': q.vars_declared_not_used()}
+    details_dict['used_but_undeclared_vars'] = {'title': 'variables used but not declared',
+                                                'data': q.vars_used_not_declared()}
     # variable declarations
-    details_dict['used_but_undeclared_variables_declarations'] = generate_var_declarations(q.vars_used_not_declared())
-    details_dict['used_zofar_functions'] = all_zofar_functions(q)
-    details_dict['all_variables_per_type'] = all_vars_per_type(q)
+    details_dict['used_but_undeclared_variables_declarations'] = {'title': 'declarations for missing variables',
+                                                                  'data': generate_var_declarations(
+                                                                      q.vars_used_not_declared())}
+    details_dict['used_zofar_functions'] = {'title': 'zofar functions used',
+                                            'description': 'no description yet',
+                                            'data': all_zofar_functions(q)}
+    details_dict['all_variables_per_type'] = {'title': 'variables per type',
+                                              'description': 'variables sorted by type',
+                                              'data': all_vars_per_type(q)}
 
     return details_dict
 
