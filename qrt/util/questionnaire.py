@@ -223,10 +223,10 @@ class SCResponseDomain(ResponseDomain):
                 return RD(*[ao.gen_xml() for ao in self.ao_list],
                           variable=self.var_ref.variable.name,
                           type=SC_TYPE_DROPDOWN,
-                          itemClasses=str(self.item_classes).lower())
+                          itemClasses=str(self.item_classes).lower(), uid=self.uid)
         return RD(*[ao.gen_xml() for ao in self.ao_list],
                   variable=self.var_ref.variable.name,
-                  itemClasses=str(self.item_classes).lower())
+                  itemClasses=str(self.item_classes).lower(), uid=self.uid)
 
 
 # noinspection PyDataclass
@@ -238,7 +238,7 @@ class MCResponseDomain(ResponseDomain):
         raise NotImplementedError
 
     def gen_xml(self):
-        return RD(*[ao.gen_xml() for ao in self.ao_list])
+        return RD(*[ao.gen_xml() for ao in self.ao_list], uid=self.uid)
 
 
 # noinspection PyDataclass
