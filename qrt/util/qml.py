@@ -11,7 +11,7 @@ from lxml.etree import _Comment as _lC
 
 from qrt.util.questionnaire import Page, Questionnaire, Variable, Transition, Trigger, TriggerRedirect, \
     TriggerVariable, TriggerAction, TriggerJsCheck, VarRef, ON_EXIT_DEFAULT, CONDITION_DEFAULT, \
-    Question, Section
+    Question, Section, VAR_TYPE_SC, VAR_TYPE_STR, VAR_TYPE_NUM, VAR_TYPE_BOOL
 
 ZOFAR_NS = "{http://www.his.de/zofar/xml/questionnaire}"
 ZOFAR_NS_URI = "http://www.his.de/zofar/xml/questionnaire"
@@ -452,14 +452,14 @@ def vars_used(page: _lE) -> List[VarRef]:
             question_type = get_question_parent(var_element)
             if var_type is None:
                 if question_type in [ZOFAR_MULTIPLE_CHOICE_TAG, ZOFAR_MATRIX_MULTIPLE_CHOICE_TAG]:
-                    var_type = 'boolean'
+                    var_type = VAR_TYPE_BOOL
                 elif question_type in [ZOFAR_SINGLE_CHOICE_TAG, ZOFAR_MATRIX_SINGLE_CHOICE_TAG]:
-                    var_type = 'singleChoiceAnswerOption'
+                    var_type = VAR_TYPE_SC
                 elif question_type in [ZOFAR_QUESTION_OPEN_TAG, ZOFAR_MATRIX_QUESTION_OPEN_TAG,
                                        ZOFAR_CALENDAR_EPISODES_TAG, ZOFAR_CALENDAR_EPISODES_TABLE_TAG]:
-                    var_type = 'string'
+                    var_type = VAR_TYPE_STR
                 else:
-                    raise TypeError(f'Unknown variable type for {var_element=}')
+                    raise TypeError(f'Unknown variable type for {var_element=}: {var_type=}')
 
             if 'condition' in element.attrib:
                 condition_list.append(element.attrib['condition'])

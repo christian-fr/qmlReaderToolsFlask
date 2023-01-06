@@ -5,7 +5,12 @@ from typing import List, Dict, Optional, Tuple, NewType, Union
 from lxml.etree import _Element as _lE, ElementTree as lEt, tostring as l_to_string
 from qrt.util.qmlgen import *
 
+VAR_TYPE_SC = "singleChoiceAnswerOption"
+VAR_TYPE_BOOL = "boolean"
+VAR_TYPE_STR = "string"
+VAR_TYPE_NUM = "number"
 
+SC_TYPE_DROPDOWN = "dropDown"
 
 ON_EXIT_DEFAULT = 'true'
 DIRECTION_DEFAULT = 'forward'
@@ -78,6 +83,7 @@ class HeaderObject(ZofarPageObject):
     def gen_xml(self):
         raise NotImplementedError
 
+
 # noinspection PyDataclass
 @dataclass(kw_only=True)
 class HeaderTitle(HeaderObject):
@@ -96,7 +102,8 @@ class HeaderQuestion(HeaderObject):
     type: str = 'question'
 
     def gen_xml(self):
-        return QUE(self.content, uid=self.uid)
+        return QUE(self.content, uid=self.uid, visible=self.visible, block="true")
+
 
 # noinspection PyDataclass
 @dataclass(kw_only=True)
@@ -134,9 +141,8 @@ class AnswerOption(ZofarPageObject):
     var_ref: Optional[VarRef] = None
     attached_open_list: List[ZofarQuestionOpen] = field(default_factory=list)
 
-    def gen_xml(self):
-        x = E()
-        pass
+    def gen_xml(self) -> _lE:
+        return AO(uid=self.uid, label=self.label, visible=self.visible, value=self.value)
 
 
 # noinspection PyDataclass
@@ -149,9 +155,11 @@ class MCAnswerOption(AnswerOption):
 @dataclass(kw_only=True)
 class SCResponseDomain(ResponseDomain):
     var_ref: VarRef
-    # for "dropDown"
+    ao_list: List[AnswerOption]
+    uid: str = 'rd'
+    item_classes: bool = True
+    # for dropDown
     rd_type: Optional[str] = None
-    ao_list: List[AnswerOption] = field(default_factory=list)
 
     def get_var_refs(self):
         raise NotImplementedError
@@ -232,9 +240,26 @@ class ZofarQuestionOpen(Question):
 # noinspection PyDataclass
 @dataclass(kw_only=True)
 class ZofarQuestionSC(Question):
-    var_ref: VarRef
-    ao_list: List[AnswerOption]
+    response_domain: SCResponseDomain
     type: str = 'questionSingleChoice'
+
+    def get_var_refs(self) -> List[VarRef]:
+        return [self.response_domain.var_ref]
+
+    def gen_xml(self) -> _lE:
+        if self.response_domain.rd_type is not None:
+            if self.response_domain.rd_type == SC_TYPE_DROPDOWN:
+                return QSC(HEADER(*[h.gen_xml() for h in self.header_list]),
+                           RD(*[ao.gen_xml() for ao in self.response_domain.ao_list],
+                              variable=self.response_domain.var_ref.variable.name,
+                              type=SC_TYPE_DROPDOWN,
+                              itemClasses=str(self.response_domain.item_classes).lower()),
+                           uid=self.uid, visible=self.visible)
+        return QSC(HEADER(*[h.gen_xml() for h in self.header_list]),
+                   RD(*[ao.gen_xml() for ao in self.response_domain.ao_list],
+                      variable=self.response_domain.var_ref.variable.name,
+                      itemClasses=str(self.response_domain.item_classes).lower()),
+                   uid=self.uid, visible=self.visible)
 
 
 @dataclass(kw_only=True)
@@ -263,7 +288,7 @@ class ZofarQuestionSCMatrix(Question):
     type: str = 'matrixSingleChoice'
     var_ref = None
 
-    def gen_xml(self):
+    def gen_xml(self) -> _lE:
         header_list = []
         for header in self.header_list:
             header_list.append(header.gen_xml())
@@ -276,9 +301,7 @@ class ZofarQuestionSCMatrix(Question):
         for item in self.response_domain.item_list:
             rd_item_list.append(IT(uid=item.uid, block="true", visible=item.visible))
 
-        x = MQSC(HEADER(*header_list), RD(), uid=self.uid, block="true")
-        y = l_to_string(x, pretty_print=True, encoding='utf-8').decode('utf-8')
-        pass
+        return MQSC(HEADER(*header_list), RD(), uid=self.uid, block="true")
 
 
 @dataclass(kw_only=True)
@@ -431,14 +454,14 @@ def example_mqsc():
 
     it_list = []
 
-    var_ref1 = VarRef(variable=Variable(name="foc680", type="singleChoiceAnswerOption"))
+    var_ref1 = VarRef(variable=Variable(name="foc680", type=VAR_TYPE_SC))
     it1 = Item(uid="it1",
                header_list=[HeaderQuestion(uid="q1",
                                            content="Meine Eltern finden, dass ich ein gutes Studienfach gewählt habe.")],
                response_domain=SCResponseDomain(uid="rd", ao_list=ao_list_it, var_ref=var_ref1))
     it_list.append(it1)
 
-    var_ref2 = VarRef(variable=Variable(name="foc680", type="singleChoiceAnswerOption"))
+    var_ref2 = VarRef(variable=Variable(name="foc680", type=VAR_TYPE_SC))
     it2 = Item(uid="it2",
                header_list=[HeaderQuestion(uid="q1",
                                            content="Meine Freundinnen und Freunde finden, dass ich ein gutes Studienfach gewählt habe.")],
@@ -447,11 +470,29 @@ def example_mqsc():
 
     matrix_rd.item_list = it_list
 
-    msc = ZofarQuestionSCMatrix(uid='msc', header_list=header_list, response_domain=matrix_rd,
-                                title_header=title_header)
-    msc.gen_xml()
-    return msc
+    mqsc = ZofarQuestionSCMatrix(uid='msc', header_list=header_list, response_domain=matrix_rd,
+                                 title_header=title_header)
+    y = l_to_string(mqsc.gen_xml(), pretty_print=True, encoding='utf-8').decode('utf-8')
+    return mqsc
+
+
+def example_qsc_1():
+    header_list = [HeaderQuestion(uid="q1",
+                                  content="Haben Sie sich an der Universität Potsdam vor Beginn Ihrer Promotion zum Thema Promovieren informiert?")]
+
+    ao_list = []
+    ao_list.append(AnswerOption(uid="ao1", value="1", label="Ja."))
+    ao_list.append(AnswerOption(uid="ao2", value="2", label="Nein."))
+
+    var_ref1 = VarRef(variable=Variable(name="foc680", type=VAR_TYPE_SC))
+    rd = SCResponseDomain(var_ref=var_ref1, ao_list=ao_list)
+
+    qsc = ZofarQuestionSC(uid="qsc1", header_list=header_list, response_domain=rd)
+
+    y = l_to_string(qsc.gen_xml(), pretty_print=True, encoding='utf-8').decode('utf-8')
+    return qsc.gen_xml()
 
 
 if __name__ == '__main__':
+    example_qsc_1()
     example_mqsc()
