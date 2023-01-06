@@ -20,7 +20,7 @@ CONDITION_DEFAULT = 'true'
 TriggerVariable = NewType('TriggerVariable', None)
 ZofarPageObject = NewType('ZofarPageObject', None)
 Section = NewType('Section', None)
-ZofarQuestionOpen = NewType('ZofarQuestionOpen', None)
+# ZofarQuestionOpen = NewType('ZofarQuestionOpen', None)
 ResponseDomain = NewType('ResponseDomain', None)
 
 
@@ -89,11 +89,17 @@ class HeaderObject(ZofarPageObject):
 class HeaderTitle(HeaderObject):
     type: str = 'title'
 
+    def gen_xml(self):
+        return TITLE(self.content, uid=self.uid, visible=self.visible, block="true")
+
 
 # noinspection PyDataclass
 @dataclass(kw_only=True)
 class HeaderText(HeaderObject):
     type: str = 'text'
+
+    def gen_xml(self):
+        return TEXT(self.content, uid=self.uid, visible=self.visible, block="true")
 
 
 # noinspection PyDataclass
@@ -110,11 +116,17 @@ class HeaderQuestion(HeaderObject):
 class HeaderIntroduction(HeaderObject):
     type: str = 'introduction'
 
+    def gen_xml(self):
+        return INT(self.content, uid=self.uid, visible=self.visible, block="true")
+
 
 # noinspection PyDataclass
 @dataclass(kw_only=True)
 class HeaderInstruction(HeaderObject):
     type: str = 'instruction'
+
+    def gen_xml(self):
+        return INS(self.content, uid=self.uid, visible=self.visible, block="true")
 
 
 # noinspection PyDataclass
@@ -128,21 +140,59 @@ class Section(ZofarPageObject):
 # noinspection PyDataclass
 @dataclass(kw_only=True)
 class ResponseDomain:
-    uid: str
+    uid: str = "rd"
     header_list: List[HeaderObject] = field(default_factory=list)
+
+
+# noinspection PyDataclass
+@dataclass(kw_only=True)
+class Question(ZofarPageObject):
+    type: Optional[str]
+    var_ref: Optional[VarRef] = None
+    header_list: List[HeaderObject] = field(default_factory=list)
+
+    def gen_xml(self):
+        return NotImplementedError
+
+
+# noinspection PyDataclass
+@dataclass(kw_only=True)
+class ZofarQuestionOpen(Question):
+    var_ref: VarRef
+    type: str = 'questionOpen'
+    size: str = "40"
+    small_option: bool = True
+
+    def gen_xml(self):
+        if self.header_list:
+            return QO(HEADER(*[h.gen_xml() for h in self.header_list]), uid=self.uid, visible=self.visible,
+                      variable=self.var_ref.variable.name, size=self.size, smallOption=str(self.small_option).lower())
+        else:
+            return QO(uid=self.uid, visible=self.visible,
+                      variable=self.var_ref.variable.name, size=self.size,
+                      smallOption=str(self.small_option).lower())
 
 
 # noinspection PyDataclass
 @dataclass(kw_only=True)
 class AnswerOption(ZofarPageObject):
     label: Optional[str]
-    value: Optional[str]
     missing: Optional[bool] = False
     var_ref: Optional[VarRef] = None
     attached_open_list: List[ZofarQuestionOpen] = field(default_factory=list)
 
     def gen_xml(self) -> _lE:
-        return AO(uid=self.uid, label=self.label, visible=self.visible, value=self.value)
+        raise NotImplementedError
+
+
+# noinspection PyDataclass
+@dataclass(kw_only=True)
+class SCAnswerOption(AnswerOption):
+    value: Optional[str]
+
+    def gen_xml(self) -> _lE:
+        return AO(*[qo.gen_xml() for qo in self.attached_open_list], uid=self.uid, label=self.label,
+                  visible=self.visible, value=self.value)
 
 
 # noinspection PyDataclass
@@ -150,19 +200,33 @@ class AnswerOption(ZofarPageObject):
 class MCAnswerOption(AnswerOption):
     var_ref: VarRef
 
+    def gen_xml(self) -> _lE:
+        return AO(*[qo.gen_xml() for qo in self.attached_open_list], uid=self.uid, label=self.label,
+                  visible=self.visible, variable=self.var_ref.variable.name)
+
 
 # noinspection PyDataclass
 @dataclass(kw_only=True)
 class SCResponseDomain(ResponseDomain):
     var_ref: VarRef
     ao_list: List[AnswerOption]
-    uid: str = 'rd'
     item_classes: bool = True
     # for dropDown
     rd_type: Optional[str] = None
 
     def get_var_refs(self):
         raise NotImplementedError
+
+    def gen_xml(self) -> _lE:
+        if self.rd_type is not None:
+            if self.rd_type == SC_TYPE_DROPDOWN:
+                return RD(*[ao.gen_xml() for ao in self.ao_list],
+                          variable=self.var_ref.variable.name,
+                          type=SC_TYPE_DROPDOWN,
+                          itemClasses=str(self.item_classes).lower())
+        return RD(*[ao.gen_xml() for ao in self.ao_list],
+                  variable=self.var_ref.variable.name,
+                  itemClasses=str(self.item_classes).lower())
 
 
 # noinspection PyDataclass
@@ -172,6 +236,9 @@ class MCResponseDomain(ResponseDomain):
 
     def get_var_refs(self):
         raise NotImplementedError
+
+    def gen_xml(self):
+        return RD(*[ao.gen_xml() for ao in self.ao_list])
 
 
 # noinspection PyDataclass
@@ -224,21 +291,6 @@ class MatrixResponseDomain(ResponseDomain):
 
 # noinspection PyDataclass
 @dataclass(kw_only=True)
-class Question(ZofarPageObject):
-    type: Optional[str]
-    var_ref: Optional[VarRef] = None
-    header_list: List[HeaderObject] = field(default_factory=list)
-
-
-# noinspection PyDataclass
-@dataclass(kw_only=True)
-class ZofarQuestionOpen(Question):
-    var_ref: VarRef
-    type: str = 'questionOpen'
-
-
-# noinspection PyDataclass
-@dataclass(kw_only=True)
 class ZofarQuestionSC(Question):
     response_domain: SCResponseDomain
     type: str = 'questionSingleChoice'
@@ -247,24 +299,21 @@ class ZofarQuestionSC(Question):
         return [self.response_domain.var_ref]
 
     def gen_xml(self) -> _lE:
-        if self.response_domain.rd_type is not None:
-            if self.response_domain.rd_type == SC_TYPE_DROPDOWN:
-                return QSC(HEADER(*[h.gen_xml() for h in self.header_list]),
-                           RD(*[ao.gen_xml() for ao in self.response_domain.ao_list],
-                              variable=self.response_domain.var_ref.variable.name,
-                              type=SC_TYPE_DROPDOWN,
-                              itemClasses=str(self.response_domain.item_classes).lower()),
-                           uid=self.uid, visible=self.visible)
         return QSC(HEADER(*[h.gen_xml() for h in self.header_list]),
-                   RD(*[ao.gen_xml() for ao in self.response_domain.ao_list],
-                      variable=self.response_domain.var_ref.variable.name,
-                      itemClasses=str(self.response_domain.item_classes).lower()),
+                   self.response_domain.gen_xml(),
                    uid=self.uid, visible=self.visible)
 
 
+# noinspection PyDataclass
 @dataclass(kw_only=True)
 class ZofarQuestionMC(Question):
+    response_domain: MCResponseDomain
     type: str = 'multipleChoice'
+
+    def gen_xml(self):
+        return MC(HEADER(*[h.gen_xml() for h in self.header_list]),
+                  self.response_domain.gen_xml(),
+                  uid=self.uid)
 
 
 # noinspection PyDataclass
@@ -436,12 +485,12 @@ def example_mqsc():
     header_list_it = [
         HeaderQuestion(uid="q1", content="Meine Eltern finden, dass ich ein gutes Studienfach gewählt habe.")]
 
-    title_header = []
-    title_header.append(HeaderTitle(uid="ti1", content="trifft völlig zu"))
-    title_header.append(HeaderTitle(uid="ti2", content="trifft eher zu"))
-    title_header.append(HeaderTitle(uid="ti3", content="teils / teils"))
-    title_header.append(HeaderTitle(uid="ti4", content="trifft eher nicht zu"))
-    title_header.append(HeaderTitle(uid="ti5", content="trifft gar nicht zu"))
+    title_header_list = []
+    title_header_list.append(HeaderTitle(uid="ti1", content="trifft völlig zu"))
+    title_header_list.append(HeaderTitle(uid="ti2", content="trifft eher zu"))
+    title_header_list.append(HeaderTitle(uid="ti3", content="teils / teils"))
+    title_header_list.append(HeaderTitle(uid="ti4", content="trifft eher nicht zu"))
+    title_header_list.append(HeaderTitle(uid="ti5", content="trifft gar nicht zu"))
 
     ao_list_it = []
     ao_list_it.append(AnswerOption(uid='ao1', value="1", label="trifft völlig zu"))
@@ -449,6 +498,10 @@ def example_mqsc():
     ao_list_it.append(AnswerOption(uid='ao3', value="3", label="teils / teils"))
     ao_list_it.append(AnswerOption(uid='ao4', value="4", label="trifft eher nicht zu"))
     ao_list_it.append(AnswerOption(uid='ao5', value="5", label="trifft gar nicht zu"))
+
+    assert check_for_unique_uids(ao_list_it)
+    assert check_for_unique_uids(title_header_list)
+    assert check_for_unique_uids(header_list)
 
     matrix_rd = MatrixResponseDomain(uid="rd", no_response_options=str(len(ao_list_it)))
 
@@ -471,7 +524,7 @@ def example_mqsc():
     matrix_rd.item_list = it_list
 
     mqsc = ZofarQuestionSCMatrix(uid='msc', header_list=header_list, response_domain=matrix_rd,
-                                 title_header=title_header)
+                                 title_header=title_header_list)
     y = l_to_string(mqsc.gen_xml(), pretty_print=True, encoding='utf-8').decode('utf-8')
     return mqsc
 
@@ -481,8 +534,11 @@ def example_qsc_1():
                                   content="Haben Sie sich an der Universität Potsdam vor Beginn Ihrer Promotion zum Thema Promovieren informiert?")]
 
     ao_list = []
-    ao_list.append(AnswerOption(uid="ao1", value="1", label="Ja."))
-    ao_list.append(AnswerOption(uid="ao2", value="2", label="Nein."))
+    ao_list.append(SCAnswerOption(uid="ao1", value="1", label="Ja."))
+    ao_list.append(SCAnswerOption(uid="ao2", value="2", label="Nein."))
+
+    assert check_for_unique_uids(ao_list)
+    assert check_for_unique_uids(header_list)
 
     var_ref1 = VarRef(variable=Variable(name="foc680", type=VAR_TYPE_SC))
     rd = SCResponseDomain(var_ref=var_ref1, ao_list=ao_list)
@@ -490,9 +546,121 @@ def example_qsc_1():
     qsc = ZofarQuestionSC(uid="qsc1", header_list=header_list, response_domain=rd)
 
     y = l_to_string(qsc.gen_xml(), pretty_print=True, encoding='utf-8').decode('utf-8')
+    z = y.replace('xmlns:zofar="http://www.his.de/zofar/xml/questionnaire" ', '')
     return qsc.gen_xml()
 
 
+def example_mc_1():
+    header_list = [HeaderQuestion(uid="q1",
+                                  content="Welche Kanäle haben Sie im Zuge Ihrer Informationssuche zum Promovieren an der Universität Potsdam genutzt?"),
+                   HeaderInstruction(uid="ins1",
+                                     content="Bitte wählen Sie alles Zutreffende aus.")]
+
+    att_open = ZofarQuestionOpen(uid="open1", var_ref=VarRef(variable=Variable(name="ap02g", type=VAR_TYPE_STR)))
+
+    ao_list = []
+    ao_list.append(MCAnswerOption(uid="ao1", label="Webseite",
+                                  var_ref=VarRef(variable=Variable(name="ap02a", type=VAR_TYPE_BOOL))))
+    ao_list.append(MCAnswerOption(uid="ao2", label="Flyer/Broschüre",
+                                  var_ref=VarRef(variable=Variable(name="ap02b", type=VAR_TYPE_BOOL))))
+    ao_list.append(MCAnswerOption(uid="ao3", label="Info-Veranstaltung",
+                                  var_ref=VarRef(variable=Variable(name="ap02c", type=VAR_TYPE_BOOL))))
+    ao_list.append(MCAnswerOption(uid="ao4", label="Beratungsgespräch",
+                                  var_ref=VarRef(variable=Variable(name="ap02d", type=VAR_TYPE_BOOL))))
+    ao_list.append(MCAnswerOption(uid="ao5", label="Gespräch mit anderen Wissenschaftler*innen",
+                                  var_ref=VarRef(variable=Variable(name="ap02e", type=VAR_TYPE_BOOL))))
+    ao_list.append(MCAnswerOption(uid="ao6", label="Sonstige, und zwar:",
+                                  var_ref=VarRef(variable=Variable(name="ap02f", type=VAR_TYPE_BOOL)),
+                                  attached_open_list=[att_open]))
+
+    # integrity check: unique uids
+    assert check_for_unique_uids(ao_list)
+    assert check_for_unique_uids(header_list)
+
+    rd = MCResponseDomain(ao_list=ao_list)
+
+    qsc = ZofarQuestionMC(uid="qsc1", header_list=header_list, response_domain=rd)
+
+    y = l_to_string(qsc.gen_xml(), pretty_print=True, encoding='utf-8').decode('utf-8')
+    z = y.replace('xmlns:zofar="http://www.his.de/zofar/xml/questionnaire" ', '')
+    return qsc.gen_xml()
+
+
+def example_mc_edit():
+    header_list = [HeaderQuestion(uid="q1",
+                                  content="Aus welchem Grund haben Sie (bisher) keine Weiterbildungsangebote der Potsdam Graduate School besucht?"),
+                   HeaderInstruction(uid="ins1",
+                                     content="Bitte wählen Sie alles Zutreffende aus.")]
+
+    ao_list = []
+    ao_list.append(MCAnswerOption(uid="ao1", label="Keine Zeit",
+                                  var_ref=VarRef(variable=Variable(name="ap09a", type=VAR_TYPE_BOOL))))
+    ao_list.append(MCAnswerOption(uid="ao2", label="Format gefällt nicht",
+                                  var_ref=VarRef(variable=Variable(name="ap09b", type=VAR_TYPE_BOOL))))
+    ao_list.append(MCAnswerOption(uid="ao3", label="Themen interessieren nicht",
+                                  var_ref=VarRef(variable=Variable(name="ap09c", type=VAR_TYPE_BOOL))))
+    ao_list.append(MCAnswerOption(uid="ao4", label="Keine Notwendigkeit",
+                                  var_ref=VarRef(variable=Variable(name="ap09d", type=VAR_TYPE_BOOL))))
+    ao_list.append(MCAnswerOption(uid="ao5", label=" Betreuer*in unterstützt Teilnahme nicht",
+                                  var_ref=VarRef(variable=Variable(name="ap09e", type=VAR_TYPE_BOOL))))
+    ao_list.append(MCAnswerOption(uid="ao6", label="Zu teuer",
+                                  var_ref=VarRef(variable=Variable(name="ap09f", type=VAR_TYPE_BOOL))))
+
+    att_open = ZofarQuestionOpen(uid="open", var_ref=VarRef(variable=Variable(name="ap09g", type=VAR_TYPE_STR)))
+    ao_list.append(MCAnswerOption(uid="ao7", label="Sonstige, und zwar:",
+                                  var_ref=VarRef(variable=Variable(name="ap09h", type=VAR_TYPE_BOOL)),
+                                  attached_open_list=[att_open]))
+
+    # integrity check: unique uids
+    assert check_for_unique_uids(ao_list)
+    assert check_for_unique_uids(header_list)
+
+    rd = MCResponseDomain(ao_list=ao_list)
+
+    qsc = ZofarQuestionMC(uid="qsc1", header_list=header_list, response_domain=rd)
+
+    y = l_to_string(qsc.gen_xml(), pretty_print=True, encoding='utf-8').decode('utf-8')
+    z = y.replace('xmlns:zofar="http://www.his.de/zofar/xml/questionnaire" ', '')
+    return qsc.gen_xml()
+
+
+def check_for_unique_uids(list_of_elements: List[ZofarPageObject]) -> bool:
+    return len({ao.uid for ao in list_of_elements}) == len(list_of_elements)
+
+
+def example_qsc_edit():
+    header_list = [HeaderQuestion(uid="q1",
+                                  content="Kennen Sie PoGS-Weiterbildungsangebote für Promovierende (z.B. Programme und Workshops)?")]
+
+    ao_list = []
+    ao_list.append(SCAnswerOption(uid="ao1", value="1", label="Ja."))
+    ao_list.append(SCAnswerOption(uid="ao2", value="2", label="Nein."))
+    ao_list.append(SCAnswerOption(uid="ao3", value="3", label="Weiß ich nicht."))
+
+    var_ref1 = VarRef(variable=Variable(name="ap06", type=VAR_TYPE_SC))
+    rd = SCResponseDomain(var_ref=var_ref1, ao_list=ao_list)
+
+    qsc = ZofarQuestionSC(uid="qsc1", header_list=header_list, response_domain=rd)
+
+    y = l_to_string(qsc.gen_xml(), pretty_print=True, encoding='utf-8').decode('utf-8')
+    z = y.replace('xmlns:zofar="http://www.his.de/zofar/xml/questionnaire" ', '')
+    return qsc.gen_xml()
+
+
+def example_oq():
+    header_list = [HeaderQuestion(uid="q1",
+                                  content="Kennen Sie PoGS-Weiterbildungsangebote für Promovierende (z.B. Programme und Workshops)?")]
+
+    qo = ZofarQuestionOpen(uid="qo1", var_ref=VarRef(variable=Variable(name="ap08", type=VAR_TYPE_STR)))
+    y = l_to_string(qo.gen_xml(), pretty_print=True, encoding='utf-8').decode('utf-8')
+    z = y.replace('xmlns:zofar="http://www.his.de/zofar/xml/questionnaire" ', '')
+    return qo.gen_xml()
+
+
 if __name__ == '__main__':
-    example_qsc_1()
-    example_mqsc()
+    # example_qsc_1()
+    # example_qsc_edit()
+    # example_mc_1()
+    example_mc_edit()
+    # example_mqsc()
+    # example_oq()
