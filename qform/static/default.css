@@ -15,5 +15,11 @@ h1 {
 }
 
 .detailsEntry {
-    margin-left: 1rem;
+    margin-left: 2rem;
+}
+
+ul.detailsEntry {
+    list-style-type: circle;
+    background: #e4f0f5;
+    padding: 5px;
 }

@@ -149,7 +149,8 @@ def details(file_id):
     q = file_dict()[file_id]['questionnaire']
     assert isinstance(q, Questionnaire)
 
-    details_data = prepare_dict_for_html(qml_details(q, file_id))
+    # details_data = prepare_dict_for_html(qml_details(q, file_id))
+    details_data = qml_details(q, file_id)
     return render_template('details.html', details_data=details_data)
 
 

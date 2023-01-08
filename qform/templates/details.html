@@ -14,16 +14,39 @@
 <body>
 <h1>QML Details</h1>
 {% for key in details_data.keys() %}
-<a href="#{{ key }}">{{ key }}</a> <br>
+    <a href="#{{ key }}">{{ key }}</a> <br>
 {% endfor %}
 
 {% for key, val in details_data.items() %}
     <article id="article{{ i }}">
         <section id="{{ key }}">
-        <h2>{{ key }}</h2>
-        {% for entry in val %}
-            <div class="detailsEntry">{{ entry }}</div>
-        {% endfor %}
+            <h2>{{ val['title'] }}</h2>
+
+            {% if 'comment' in val %}
+                <div class="detailsComment"> {{ val['comment'] }}</div>
+            {% endif %}
+
+            <!-- <div class="detailsEntry">{{ val['data'] }}</div> -->
+
+
+            {% if val['data'].__class__.__name__ == 'dict' %}
+                <table class="detailsEntry">
+                    {% for key2, val2 in val['data'].items() %}
+                        <tr>
+                            <td> {{ key2 }}</td>
+                            <td style="text-align: left"> {{ val2 }}</td>
+                        </tr>
+                    {% endfor %}
+                </table>
+            {% endif %}
+
+            {% if val['data'].__class__.__name__ == 'list' %}
+                <ul class="detailsEntry">
+                    {% for entry in val['data'] %}
+                            <li> {{ entry }}</li>
+                    {% endfor %}
+                </ul>
+            {% endif %}
         </section>
     </article>
 {% endfor %}
