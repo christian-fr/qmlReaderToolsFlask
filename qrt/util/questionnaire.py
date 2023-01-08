@@ -24,7 +24,7 @@ Section = NewType('Section', None)
 ResponseDomain = NewType('ResponseDomain', None)
 
 
-# Item = NewType('Item', None)
+# MatrixItem = NewType('MatrixItem', None)
 
 
 @dataclass(kw_only=True)
@@ -33,6 +33,9 @@ class ZofarPageObject:
     # parent_uid: Optional[str] = None
     # full_uid: Optional[str] = None
     visible: str = 'true'
+
+    def __eq__(self, other):
+        return eq_attributes_and_values(self, other)
 
 
 @dataclass(kw_only=True)
@@ -143,6 +146,9 @@ class ResponseDomain:
     uid: str = "rd"
     header_list: List[HeaderObject] = field(default_factory=list)
 
+    def __eq__(self, other):
+        return eq_attributes_and_values(self, other)
+
 
 # noinspection PyDataclass
 @dataclass(kw_only=True)
@@ -242,39 +248,62 @@ class MCResponseDomain(ResponseDomain):
 
 
 # noinspection PyDataclass
-@dataclass(kw_only=True)
-class Item(ZofarPageObject):
-    header_list: List[HeaderObject]
-    response_domain: ResponseDomain
 
 
 # noinspection PyDataclass
 @dataclass(kw_only=True)
-class QOItem(Item):
+class MatrixItem(ZofarPageObject):
+    header_list: List[HeaderObject]
+
+    def gen_xml(self):
+        raise NotImplementedError
+
+
+# noinspection PyDataclass
+@dataclass(kw_only=True)
+class QOMatrixItem(MatrixItem):
     var_ref: Optional[VarRef]
     response_domain: SCResponseDomain
 
     def get_var_refs(self):
         raise NotImplementedError
 
+    def gen_xml(self):
+        raise NotImplementedError
+
 
 # noinspection PyDataclass
 @dataclass(kw_only=True)
-class SCItem(ZofarPageObject):
-    var_ref: VarRef
+class SCMatrixItem(MatrixItem):
     response_domain: SCResponseDomain
 
     def get_var_refs(self):
         raise NotImplementedError
 
+    def gen_xml(self):
+        return ITEM(HEADER(*[h.gen_xml() for h in self.header_list]),
+                    self.response_domain.gen_xml(),
+                    uid=self.uid, visible=self.visible)
+
+
+def eq_attributes_and_values(obj1: object, obj2: object) -> bool:
+    if obj1.__dict__.keys() != obj2.__dict__.keys():
+        return False
+    return all([getattr(obj1, attr) == getattr(obj2, attr) for attr in obj1.__dict__.keys()])
+
 
 # noinspection PyDataclass
 @dataclass(kw_only=True)
-class MCItem(ZofarPageObject):
+class MCMatrixItem(MatrixItem):
     response_domain: MCResponseDomain
 
     def get_var_refs(self):
         raise NotImplementedError
+
+    def gen_xml(self):
+        return ITEM(HEADER(*[h.gen_xml() for h in self.header_list]),
+                    self.response_domain.gen_xml(),
+                    uid=self.uid, visible=self.visible)
 
 
 # noinspection PyDataclass
@@ -282,11 +311,26 @@ class MCItem(ZofarPageObject):
 class MatrixResponseDomain(ResponseDomain):
     no_response_options: Optional[str]
     # for singleChoice -> "dropDown"
-    rd_type: Optional[str] = None
-    item_list: List[Union[MCItem, SCItem]] = field(default_factory=list)
+    item_list: List[Union[MCMatrixItem, SCMatrixItem, QOMatrixItem]] = field(default_factory=list)
 
     def get_var_refs(self):
         return [it.get_var_refs() for it in self.item_list]
+
+    def gen_xml(self):
+        ref_ao_list = None
+        for it in self.item_list:
+            if ref_ao_list is None:
+                ref_ao_list = it.response_domain.ao_list
+                continue
+            assert it.response_domain.ao_list == ref_ao_list
+
+        header_titles_list = [TITLE(ao.label, uid=f'ti{i + 1}') for i, ao in enumerate(ref_ao_list) if not ao.missing]
+        header_missing_list = [TITLE(ao.label, uid=f'ti{i + 1 + len(ref_ao_list)}') for i, ao in enumerate(ref_ao_list)
+                               if ao.missing]
+
+        return RD(HEADER(*header_titles_list), MIS_HEADER(*header_missing_list),
+                  *[it.gen_xml() for it in self.item_list], uid=self.uid,
+                  noResponseOptions=str(max([len(it.response_domain.ao_list) for it in self.item_list])))
 
 
 # noinspection PyDataclass
@@ -328,29 +372,39 @@ class ZofarQuestionMCMatrix(Question):
     def get_var_refs(self) -> List[VarRef]:
         return [f.var_ref for f in self.children if f.var_ref is not None]
 
+    def gen_xml(self) -> _lE:
+        return MMC(HEADER(*[h.gen_xml() for h in self.header_list]),
+                   self.response_domain.gen_xml(), uid=self.uid,
+                   block="true")
+
 
 # noinspection PyDataclass
 @dataclass(kw_only=True)
 class ZofarQuestionSCMatrix(Question):
     title_header: List[ZofarPageObject]
+    missing_header: List[ZofarPageObject]
     response_domain: MatrixResponseDomain
     type: str = 'matrixSingleChoice'
     var_ref = None
 
     def gen_xml(self) -> _lE:
-        header_list = []
-        for header in self.header_list:
-            header_list.append(header.gen_xml())
+        return MQSC(HEADER(*[h.gen_xml() for h in self.header_list]),
+                    self.response_domain.gen_xml(), uid=self.uid,
+                    block="true")
 
-        rd_header_title_list = []
 
-        for header_title in self.title_header:
-            TITLE(header_titleuid=header_title.uid)
-        rd_item_list = []
-        for item in self.response_domain.item_list:
-            rd_item_list.append(IT(uid=item.uid, block="true", visible=item.visible))
+# noinspection PyDataclass
+@dataclass(kw_only=True)
+class ZofarQuestionQOMatrix(Question):
+    title_header: List[ZofarPageObject]
+    response_domain: MatrixResponseDomain
+    type: str = 'matrixQuestionOpen'
+    var_ref = None
 
-        return MQSC(HEADER(*header_list), RD(), uid=self.uid, block="true")
+    def gen_xml(self) -> _lE:
+        return MQO(HEADER(*[h.gen_xml() for h in self.header_list]),
+                   self.response_domain.gen_xml(), uid=self.uid,
+                   block="true")
 
 
 @dataclass(kw_only=True)
@@ -492,15 +546,18 @@ def example_mqsc():
     title_header_list.append(HeaderTitle(uid="ti4", content="trifft eher nicht zu"))
     title_header_list.append(HeaderTitle(uid="ti5", content="trifft gar nicht zu"))
 
+    title_missing_list = []
+
     ao_list_it = []
-    ao_list_it.append(AnswerOption(uid='ao1', value="1", label="trifft völlig zu"))
-    ao_list_it.append(AnswerOption(uid='ao2', value="2", label="trifft eher zu"))
-    ao_list_it.append(AnswerOption(uid='ao3', value="3", label="teils / teils"))
-    ao_list_it.append(AnswerOption(uid='ao4', value="4", label="trifft eher nicht zu"))
-    ao_list_it.append(AnswerOption(uid='ao5', value="5", label="trifft gar nicht zu"))
+    ao_list_it.append(SCAnswerOption(uid='ao1', value="1", label="trifft völlig zu"))
+    ao_list_it.append(SCAnswerOption(uid='ao2', value="2", label="trifft eher zu"))
+    ao_list_it.append(SCAnswerOption(uid='ao3', value="3", label="teils / teils"))
+    ao_list_it.append(SCAnswerOption(uid='ao4', value="4", label="trifft eher nicht zu"))
+    ao_list_it.append(SCAnswerOption(uid='ao5', value="5", label="trifft gar nicht zu", missing=True))
 
     assert check_for_unique_uids(ao_list_it)
     assert check_for_unique_uids(title_header_list)
+    assert check_for_unique_uids(title_missing_list)
     assert check_for_unique_uids(header_list)
 
     matrix_rd = MatrixResponseDomain(uid="rd", no_response_options=str(len(ao_list_it)))
@@ -508,25 +565,94 @@ def example_mqsc():
     it_list = []
 
     var_ref1 = VarRef(variable=Variable(name="foc680", type=VAR_TYPE_SC))
-    it1 = Item(uid="it1",
-               header_list=[HeaderQuestion(uid="q1",
-                                           content="Meine Eltern finden, dass ich ein gutes Studienfach gewählt habe.")],
-               response_domain=SCResponseDomain(uid="rd", ao_list=ao_list_it, var_ref=var_ref1))
+    it1 = SCMatrixItem(uid="it1",
+                       header_list=[HeaderQuestion(uid="q1",
+                                                   content="Meine Eltern finden, dass ich ein gutes Studienfach gewählt habe.")],
+                       response_domain=SCResponseDomain(uid="rd", ao_list=ao_list_it, var_ref=var_ref1))
     it_list.append(it1)
 
     var_ref2 = VarRef(variable=Variable(name="foc680", type=VAR_TYPE_SC))
-    it2 = Item(uid="it2",
-               header_list=[HeaderQuestion(uid="q1",
-                                           content="Meine Freundinnen und Freunde finden, dass ich ein gutes Studienfach gewählt habe.")],
-               response_domain=SCResponseDomain(uid="rd", ao_list=ao_list_it, var_ref=var_ref2))
+    it2 = SCMatrixItem(uid="it2",
+                       header_list=[HeaderQuestion(uid="q1",
+                                                   content="Meine Freundinnen und Freunde finden, dass ich ein gutes Studienfach gewählt habe.")],
+                       response_domain=SCResponseDomain(uid="rd", ao_list=ao_list_it, var_ref=var_ref2))
     it_list.append(it2)
 
     matrix_rd.item_list = it_list
 
-    mqsc = ZofarQuestionSCMatrix(uid='msc', header_list=header_list, response_domain=matrix_rd,
-                                 title_header=title_header_list)
-    y = l_to_string(mqsc.gen_xml(), pretty_print=True, encoding='utf-8').decode('utf-8')
+    mqsc = ZofarQuestionSCMatrix(uid='msca', header_list=header_list, response_domain=matrix_rd,
+                                 title_header=title_header_list, missing_header=title_missing_list)
     return mqsc
+
+
+def example_mqmc():
+    header_list = [HeaderQuestion(uid="q1", content="Was halten Ihre Eltern und Ihre Freunde von Ihrem Studienfach?")]
+    header_list_it = [
+        HeaderQuestion(uid="q1", content="Meine Eltern finden, dass ich ein gutes Studienfach gewählt habe.")]
+
+    title_header_list = []
+    title_header_list.append(HeaderTitle(uid="ti1", content="trifft völlig zu"))
+    title_header_list.append(HeaderTitle(uid="ti2", content="trifft eher zu"))
+    title_header_list.append(HeaderTitle(uid="ti3", content="teils / teils"))
+    title_header_list.append(HeaderTitle(uid="ti4", content="trifft eher nicht zu"))
+    title_header_list.append(HeaderTitle(uid="ti5", content="trifft gar nicht zu"))
+
+    ao_list_it1 = []
+    ao_list_it1.append(MCAnswerOption(uid='ao1', var_ref=VarRef(variable=Variable(name="var01a", type=VAR_TYPE_BOOL)),
+                                     label="trifft völlig zu"))
+    ao_list_it1.append(MCAnswerOption(uid='ao2', var_ref=VarRef(variable=Variable(name="var01b", type=VAR_TYPE_BOOL)),
+                                     label="trifft völlig zu"))
+    ao_list_it1.append(MCAnswerOption(uid='ao3', var_ref=VarRef(variable=Variable(name="var01c", type=VAR_TYPE_BOOL)),
+                                     label="trifft völlig zu"))
+    ao_list_it1.append(MCAnswerOption(uid='ao4', var_ref=VarRef(variable=Variable(name="var01d", type=VAR_TYPE_BOOL)),
+                                     label="trifft völlig zu"))
+    ao_list_it1.append(MCAnswerOption(uid='ao5', var_ref=VarRef(variable=Variable(name="var01e", type=VAR_TYPE_BOOL)),
+                                     label="trifft völlig zu", missing=True))
+
+    ao_list_it2 = []
+    ao_list_it2.append(MCAnswerOption(uid='ao1', var_ref=VarRef(variable=Variable(name="var02a", type=VAR_TYPE_BOOL)),
+                                     label="trifft völlig zu"))
+    ao_list_it2.append(MCAnswerOption(uid='ao2', var_ref=VarRef(variable=Variable(name="var02b", type=VAR_TYPE_BOOL)),
+                                     label="trifft völlig zu"))
+    ao_list_it2.append(MCAnswerOption(uid='ao3', var_ref=VarRef(variable=Variable(name="var02c", type=VAR_TYPE_BOOL)),
+                                     label="trifft völlig zu"))
+    ao_list_it2.append(MCAnswerOption(uid='ao4', var_ref=VarRef(variable=Variable(name="var02d", type=VAR_TYPE_BOOL)),
+                                     label="trifft völlig zu"))
+    ao_list_it2.append(MCAnswerOption(uid='ao5', var_ref=VarRef(variable=Variable(name="var02e", type=VAR_TYPE_BOOL)),
+                                     label="trifft völlig zu", missing=True))
+
+    title_missing_list = []
+
+    assert check_for_unique_uids(ao_list_it1)
+    assert check_for_unique_uids(ao_list_it2)
+    assert check_for_unique_uids(title_header_list)
+    assert check_for_unique_uids(title_missing_list)
+    assert check_for_unique_uids(header_list)
+
+    matrix_rd = MatrixResponseDomain(uid="rd", no_response_options=str(len(ao_list_it1)))
+
+    it_list = []
+
+    var_ref1 = VarRef(variable=Variable(name="foc680", type=VAR_TYPE_SC))
+    it1 = MCMatrixItem(uid="it1",
+                       header_list=[HeaderQuestion(uid="q1",
+                                                   content="Meine Eltern finden, dass ich ein gutes Studienfach gewählt habe.")],
+                       response_domain=MCResponseDomain(uid="rd", ao_list=ao_list_it))
+                        # ToDo: Multiple Choice Response Domain works differently from SC!
+    it_list.append(it1)
+
+    var_ref2 = VarRef(variable=Variable(name="foc680", type=VAR_TYPE_SC))
+    it2 = MCMatrixItem(uid="it2",
+                       header_list=[HeaderQuestion(uid="q1",
+                                                   content="Meine Freundinnen und Freunde finden, dass ich ein gutes Studienfach gewählt habe.")],
+                       response_domain=MCResponseDomain(uid="rd", ao_list=ao_list_it))
+    it_list.append(it2)
+
+    matrix_rd.item_list = it_list
+
+    mqmc = ZofarQuestionMCMatrix(uid='mscb', header_list=header_list, response_domain=matrix_rd,
+                                 title_header=title_header_list, missing_header=title_missing_list)
+    return mqmc
 
 
 def example_qsc_1():
@@ -543,11 +669,9 @@ def example_qsc_1():
     var_ref1 = VarRef(variable=Variable(name="foc680", type=VAR_TYPE_SC))
     rd = SCResponseDomain(var_ref=var_ref1, ao_list=ao_list)
 
-    qsc = ZofarQuestionSC(uid="qsc1", header_list=header_list, response_domain=rd)
+    qsc = ZofarQuestionSC(uid="qsc1c", header_list=header_list, response_domain=rd)
 
-    y = l_to_string(qsc.gen_xml(), pretty_print=True, encoding='utf-8').decode('utf-8')
-    z = y.replace('xmlns:zofar="http://www.his.de/zofar/xml/questionnaire" ', '')
-    return qsc.gen_xml()
+    return qsc
 
 
 def example_mc_1():
@@ -579,11 +703,9 @@ def example_mc_1():
 
     rd = MCResponseDomain(ao_list=ao_list)
 
-    qsc = ZofarQuestionMC(uid="qsc1", header_list=header_list, response_domain=rd)
+    qsc = ZofarQuestionMC(uid="qsc1d", header_list=header_list, response_domain=rd)
 
-    y = l_to_string(qsc.gen_xml(), pretty_print=True, encoding='utf-8').decode('utf-8')
-    z = y.replace('xmlns:zofar="http://www.his.de/zofar/xml/questionnaire" ', '')
-    return qsc.gen_xml()
+    return qsc
 
 
 def example_mc_edit():
@@ -617,11 +739,9 @@ def example_mc_edit():
 
     rd = MCResponseDomain(ao_list=ao_list)
 
-    qsc = ZofarQuestionMC(uid="qsc1", header_list=header_list, response_domain=rd)
+    qsc = ZofarQuestionMC(uid="mce", header_list=header_list, response_domain=rd)
 
-    y = l_to_string(qsc.gen_xml(), pretty_print=True, encoding='utf-8').decode('utf-8')
-    z = y.replace('xmlns:zofar="http://www.his.de/zofar/xml/questionnaire" ', '')
-    return qsc.gen_xml()
+    return qsc
 
 
 def check_for_unique_uids(list_of_elements: List[ZofarPageObject]) -> bool:
@@ -640,27 +760,30 @@ def example_qsc_edit():
     var_ref1 = VarRef(variable=Variable(name="ap06", type=VAR_TYPE_SC))
     rd = SCResponseDomain(var_ref=var_ref1, ao_list=ao_list)
 
-    qsc = ZofarQuestionSC(uid="qsc1", header_list=header_list, response_domain=rd)
+    qsc = ZofarQuestionSC(uid="qsc1f", header_list=header_list, response_domain=rd)
 
-    y = l_to_string(qsc.gen_xml(), pretty_print=True, encoding='utf-8').decode('utf-8')
-    z = y.replace('xmlns:zofar="http://www.his.de/zofar/xml/questionnaire" ', '')
-    return qsc.gen_xml()
+    return qsc
 
 
 def example_oq():
     header_list = [HeaderQuestion(uid="q1",
                                   content="Kennen Sie PoGS-Weiterbildungsangebote für Promovierende (z.B. Programme und Workshops)?")]
-
-    qo = ZofarQuestionOpen(uid="qo1", var_ref=VarRef(variable=Variable(name="ap08", type=VAR_TYPE_STR)))
-    y = l_to_string(qo.gen_xml(), pretty_print=True, encoding='utf-8').decode('utf-8')
-    z = y.replace('xmlns:zofar="http://www.his.de/zofar/xml/questionnaire" ', '')
-    return qo.gen_xml()
+    qo = ZofarQuestionOpen(uid="qo1g", header_list=header_list,
+                           var_ref=VarRef(variable=Variable(name="ap08", type=VAR_TYPE_STR)))
+    return qo
 
 
 if __name__ == '__main__':
-    # example_qsc_1()
-    # example_qsc_edit()
-    # example_mc_1()
-    example_mc_edit()
-    # example_mqsc()
-    # example_oq()
+    q_list = []
+    q_list.append(example_qsc_1())
+    q_list.append(example_qsc_edit())
+    q_list.append(example_mc_1())
+    q_list.append(example_mc_edit())
+    q_list.append(example_mqsc())
+    q_list.append(example_mqmc())
+    q_list.append(example_oq())
+
+    qml_str = '\n'.join([l_to_string(question.gen_xml(), pretty_print=True, encoding='utf-8').decode('utf-8') for question in q_list])
+    pass
+    z = qml_str.replace('xmlns:zofar="http://www.his.de/zofar/xml/questionnaire" ', '')
+    pass

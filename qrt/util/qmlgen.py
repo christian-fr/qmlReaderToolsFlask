@@ -7,6 +7,7 @@ E = ElementMaker(namespace=ZOFAR_NS_URI, nsmap=NS)
 
 PAGE = E.page
 HEADER = E.header
+MIS_HEADER = E.missingHeader
 BODY = E.body
 SECTION = E.section
 UNIT = E.unit
@@ -18,7 +19,7 @@ QO = E.questionOpen
 MQO = E.matrixQuestionOpen
 RD = E.responseDomain
 AO = E.answerOption
-IT = E.item
+ITEM = E.item
 TITLE = E.title
 TEXT = E.text
 INS = E.instruction
