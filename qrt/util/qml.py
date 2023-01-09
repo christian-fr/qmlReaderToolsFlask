@@ -344,7 +344,7 @@ def body_questions_vars(page: _lE) -> List[str]:
 
                 question_types_classes_dict = {qu.type: qu for qu in Question.__subclasses__()}
                 section_type_class_dict = {Section.type: Section}
-                raise NotImplementedError
+                # ToDo: not implemented yet!
                 if element.tag == ZOFAR_SINGLE_CHOICE_TAG:
                     pass
                 elif element.tag == ZOFAR_MATRIX_SINGLE_CHOICE_TAG:
