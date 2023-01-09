@@ -197,8 +197,12 @@ class SCAnswerOption(AnswerOption):
     value: Optional[str]
 
     def gen_xml(self) -> _lE:
-        return AO(*[qo.gen_xml() for qo in self.attached_open_list], uid=self.uid, label=self.label,
-                  visible=self.visible, value=self.value)
+        if self.missing:
+            return AO(*[qo.gen_xml() for qo in self.attached_open_list], uid=self.uid, label=self.label,
+                      visible=self.visible, value=self.value, missing=str(self.missing).lower())
+        else:
+            return AO(*[qo.gen_xml() for qo in self.attached_open_list], uid=self.uid, label=self.label,
+                      visible=self.visible, value=self.value)
 
 
 # noinspection PyDataclass
@@ -325,7 +329,7 @@ class MatrixResponseDomain(ResponseDomain):
             assert it.response_domain.ao_list == ref_ao_list
 
         header_titles_list = [TITLE(ao.label, uid=f'ti{i + 1}') for i, ao in enumerate(ref_ao_list) if not ao.missing]
-        header_missing_list = [TITLE(ao.label, uid=f'ti{i + 1 + len(ref_ao_list)}') for i, ao in enumerate(ref_ao_list)
+        header_missing_list = [TITLE(ao.label, uid=f'ti{i + 1 + len([a for a in ref_ao_list if not ao.missing])}') for i, ao in enumerate(ref_ao_list)
                                if ao.missing]
 
         return RD(HEADER(*header_titles_list), MIS_HEADER(*header_missing_list),
