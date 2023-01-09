@@ -88,29 +88,6 @@ class TestQuestionnaire(TestCase):
                            response_domain=SCResponseDomain(uid="rd", ao_list=ao_list_it, var_ref=var_ref3))
         it_list.append(it3)
 
-        # var_ref4 = VarRef(variable=Variable(name="ap03d", type=VAR_TYPE_SC))
-        # it4 = SCMatrixItem(uid="it4",
-        #                    header_list=[HeaderQuestion(uid="q1",
-        #                                                content="Die Betreuung durch die Einrichtung, in der ich das Praktikum absolviere, ist sehr gut.")],
-        #                    response_domain=SCResponseDomain(uid="rd", ao_list=ao_list_it, var_ref=var_ref4))
-        # it_list.append(it4)
-        #
-        # var_ref5 = VarRef(variable=Variable(name="ap03e", type=VAR_TYPE_SC))
-        # it4 = SCMatrixItem(uid="it5",
-        #                    header_list=[HeaderQuestion(uid="q1",
-        #                                                content="Die Betreuung durch die Einrichtung, in der ich das Praktikum absolviere, ist sehr gut.")],
-        #                    response_domain=SCResponseDomain(uid="rd", ao_list=ao_list_it, var_ref=var_ref5))
-        # it_list.append(it4)
-        #
-        # var_ref6 = VarRef(variable=Variable(name="ap03f", type=VAR_TYPE_SC))
-        # att_open = ZofarAttachedOpen(uid='open1', var_ref=VarRef(variable=Variable(name="ap03g", type=VAR_TYPE_STR)))
-        # it4 = SCMatrixItem(uid="it6",
-        #                    header_list=[HeaderQuestion(uid="q1",
-        #                                                content="Die Betreuung durch die Einrichtung, in der ich das Praktikum absolviere, ist sehr gut.")],
-        #                    response_domain=SCResponseDomain(uid="rd", ao_list=ao_list_it, var_ref=var_ref6),
-        #                    attached_open_list=[att_open])
-        # it_list.append(it4)
-
         matrix_rd.item_list = it_list
 
         mqsc = ZofarQuestionSCMatrix(uid='mqsc1', header_list=header_list, response_domain=matrix_rd,

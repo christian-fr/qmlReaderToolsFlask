@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>generate</title>
+</head>
+<body>
+<form method="post">
+    <input type="hidden" name="type" value="mqsc"/>
+    <div id="mqsc">
+        <h3>single choice matrix</h3>
+
+        <div class="form-generate">
+            <p><label for="question_uid">uid</label></p>
+            <p><input type="text" name="question_uid" id="question_uid" size="4"></p>
+        </div>
+
+        <hr>
+
+        <h4> question header</h4>
+        <table>
+            <tr>
+                <td>
+                    <div class="form-generate">
+                        <p><label for="header1_uid">uid</label></p>
+                        <p><input type="text" name="header1_uid" id="header1_uid" size="4"></p>
+                    </div>
+                </td>
+                <td>
+                    <p><label for="header1_type">type</label></p>
+                    <p><label>
+                        <select name="header1_type" size="1">
+                            <option>question</option>
+                            <option>introduction</option>
+                            <option>instruction</option>
+                        </select>
+                    </label>
+                    </p>
+                </td>
+
+
+                <td>
+                    <div class="form-generate">
+                        <p><label for="header1_type">value</label></p>
+                        <p><input type="text" name="header1_type" id="header1_type" size="5"></p>
+                    </div>
+                </td>
+                <td>
+                    <div class="form-generate">
+                        <p><label for="header1_text">header text</label></p>
+                        <p><input type="text" name="header1_text" id="header1_text" size="40"></p>
+                    </div>
+                </td>
+            </tr>
+            <tr>
+                <td colspan="4">
+                    <div class="form-generate">
+                        <p><label for="header1_visible">visible</label></p>
+                        <p><input type="text" name="header1_visible" id="ao1_visible" size="75"></p>
+                    </div>
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <button class="favorite styled" type="submit" value="header1" name="up">up</button>
+                    <button class="favorite styled" type="submit" value="header1" name="remove">remove</button>
+                    <button class="favorite styled" type="submit" value="header1" name="down">down</button>
+                </td>
+            </tr>
+
+        </table>
+
+        <button class="favorite styled" type="submit" value="add_header" name="submit">add header</button>
+
+        <hr>
+
+        <h4> answer options</h4>
+        <table>
+            <tr>
+                <td>
+                    <div class="form-generate">
+                        <p><label for="ao1_uid">uid</label></p>
+                        <p><input type="text" name="ao1_uid" id="ao1_uid" size="4"></p>
+                    </div>
+                </td>
+                <td>
+                    <div class="form-generate">
+                        <p><label for="ao1_value">value</label></p>
+                        <p><input type="text" name="ao1_value" id="ao1_value" size="5"></p>
+                    </div>
+                </td>
+                <td>
+                    <div class="form-generate">
+                        <p><label for="ao1_label">label</label></p>
+                        <p><input type="text" name="ao1_label" id="ao1_label" size="45"></p>
+                    </div>
+                </td>
+                <td>
+                    <div class="form-generate">
+                        <p><label for="ao1_missing">missing</label></p>
+                        <p><input type="checkbox" name="ao1_missing" id="ao1_missing"></p>
+                    </div>
+                </td>
+            </tr>
+            <tr>
+                <td colspan="4">
+                    <div class="form-generate">
+                        <p><label for="ao1_visible">visible</label></p>
+                        <p><input type="text" name="ao1_visible" id="ao1_visible" size="75"></p>
+                    </div>
+                </td>
+            </tr>
+
+            <tr>
+                <td>
+                    <button class="favorite styled" type="submit" value="ao1" name="up">up</button>
+                    <button class="favorite styled" type="submit" value="ao1" name="remove">remove</button>
+                    <button class="favorite styled" type="submit" value="ao1" name="down">down</button>
+                </td>
+            </tr>
+
+        </table>
+
+        <button class="favorite styled" type="submit" value="add_ao" name="submit">add ao</button>
+
+        <hr>
+
+        <h4> items </h4>
+        <table>
+            <tr>
+                <td>
+                    <div class="form-generate">
+                        <p><label for="item1_uid">uid</label></p>
+                        <p><input type="text" name="item1_uid" id="item1_uid" size="4"></p>
+                    </div>
+                </td>
+                <td>
+                    <div class="form-generate">
+                        <p><label for="item1_variable">variable</label></p>
+                        <p><input type="text" name="item1_variable" id="item1_variable" size="5"></p>
+                    </div>
+                </td>
+                <td>
+                    <div class="form-generate">
+                        <p><label for="item1_text">label</label></p>
+                        <p><input type="text" name="item1_text" id="item1_text" size="40"></p>
+                    </div>
+                </td>
+            </tr>
+            <tr>
+                <td colspan="4">
+                    <div class="form-generate">
+                        <p><label for="item1_visible">visible</label></p>
+                        <p><input type="text" name="item1_visible" id="item1_visible" size="75"></p>
+                    </div>
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <button class="favorite styled" type="submit" value="item1" name="up">up</button>
+                    <button class="favorite styled" type="submit" value="item1" name="remove">remove</button>
+                    <button class="favorite styled" type="submit" value="item1" name="down">down</button>
+                </td>
+            </tr>
+
+        </table>
+
+        <button class="favorite styled" type="submit" value="add_item" name="submit">add ao</button>
+
+        <hr>
+
+        <button class="favorite styled" type="submit" value="gen_xml" name="submit">add ao</button>
+
+    </div>
+</form>
+</body>
+</html>

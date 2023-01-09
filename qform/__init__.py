@@ -1,6 +1,6 @@
 import os
 import secrets
-from collections import OrderedDict
+from collections import OrderedDict, defaultdict
 from pathlib import Path
 from typing import Any, Dict, Optional, List
 from qrt.util.util import qml_details, make_flowchart
@@ -20,6 +20,7 @@ app.secret_key = secrets.token_hex(16)
 
 ALLOWED_EXTENSIONS = ['xml']
 FILE_DICT = None
+GEN_DICT = None
 
 
 def randstr(n, alphabet=hexdigits):
@@ -48,6 +49,16 @@ def file_dict():
     return FILE_DICT
 
 
+def gen_dict():
+    global GEN_DICT
+    # review simple gen data dict - might be cleared when app is reinitialized
+
+    if GEN_DICT is None:
+        GEN_DICT = {}
+
+    return GEN_DICT
+
+
 @app.route('/')
 def index():
     return redirect('upload')
@@ -58,6 +69,49 @@ def upload():
     uploaded_files = [{k: v for k, v in f.items() if k not in ['questionnaire']} for f in file_dict().values()]
     # uploaded_files = list(file_dict().values())
     return render_template('upload.html', uploaded_files=uploaded_files, flowcharts=uploaded_files)
+
+
+@app.route('/gen_mqsc', methods=['GET'])
+def form_mqsc():
+    data = gen_dict()
+    if data == {}:
+        data = {}
+    return render_template('gen_mqsc.html', gen_data=data)
+
+
+def nested_dict(input_dict: Dict[str, str], prefix: str) -> Dict[int, Dict[str, str]]:
+    result = defaultdict(dict)
+    for k, v in input_dict.items():
+        if not k.startswith(prefix):
+            continue
+        result[int(k.split('_')[0].strip(prefix))][k.split('_')[1]] = v
+    return result
+
+
+@app.route('/gen_mqsc', methods=['POST'])
+def form_mqsc_post():
+    data = {'type': request.form['type'],
+            'q_uid': request.form['question_uid'],
+            'headers': nested_dict(request.form, 'header'),
+            'aos': nested_dict(request.form, 'ao'),
+            'items': nested_dict(request.form, 'item')
+            }
+    action = request.form['submit']
+    if action == 'add_header':
+        pass
+    elif action == 'add_item':
+        pass
+    elif action == 'add_ao':
+        pass
+
+    gen_dict().clear()
+    gen_dict().update(data)
+    return render_template('gen_mqsc.html', gen_data=gen_dict())
+
+
+@app.route('/api/gen_mqsc', methods=['POST'])
+def generate_mqsc():
+    pass
 
 
 @app.route('/api/process/<file_id>', methods=['GET'])
