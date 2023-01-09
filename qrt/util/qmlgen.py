@@ -16,6 +16,7 @@ MC = E.multipleChoice
 MMC = E.matrixMultipleChoice
 MQSC = E.matrixQuestionSingleChoice
 QO = E.questionOpen
+ATTQO = E.attachedOpen
 MQO = E.matrixQuestionOpen
 RD = E.responseDomain
 AO = E.answerOption

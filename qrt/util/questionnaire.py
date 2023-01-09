@@ -179,6 +179,11 @@ class ZofarQuestionOpen(Question):
                       smallOption=str(self.small_option).lower())
 
 
+class ZofarAttachedOpen(ZofarQuestionOpen):
+    def gen_xml(self):
+        return ATTQO(uid=self.uid, variable=self.var_ref.variable.name)
+
+
 # noinspection PyDataclass
 @dataclass(kw_only=True)
 class AnswerOption(ZofarPageObject):
@@ -252,12 +257,10 @@ class MCResponseDomain(ResponseDomain):
 
 
 # noinspection PyDataclass
-
-
-# noinspection PyDataclass
 @dataclass(kw_only=True)
 class MatrixItem(ZofarPageObject):
     header_list: List[HeaderObject]
+    attached_open_list: List[ZofarAttachedOpen] = field(default_factory=list)
 
     def gen_xml(self):
         raise NotImplementedError
@@ -287,6 +290,8 @@ class SCMatrixItem(MatrixItem):
     def gen_xml(self):
         return ITEM(HEADER(*[h.gen_xml() for h in self.header_list]),
                     self.response_domain.gen_xml(),
+                    *[h.gen_xml() for h in self.header_list],
+                    *[att_qo.gen_xml() for att_qo in self.attached_open_list],
                     uid=self.uid, visible=self.visible)
 
 
@@ -329,7 +334,8 @@ class MatrixResponseDomain(ResponseDomain):
             assert it.response_domain.ao_list == ref_ao_list
 
         header_titles_list = [TITLE(ao.label, uid=f'ti{i + 1}') for i, ao in enumerate(ref_ao_list) if not ao.missing]
-        header_missing_list = [TITLE(ao.label, uid=f'ti{i + 1 + len([a for a in ref_ao_list if not ao.missing])}') for i, ao in enumerate(ref_ao_list)
+        header_missing_list = [TITLE(ao.label, uid=f'ti{i + 1 + len([a for a in ref_ao_list if not ao.missing])}') for
+                               i, ao in enumerate(ref_ao_list)
                                if ao.missing]
 
         return RD(HEADER(*header_titles_list), MIS_HEADER(*header_missing_list),
@@ -603,27 +609,27 @@ def example_mqmc():
 
     ao_list_it1 = []
     ao_list_it1.append(MCAnswerOption(uid='ao1', var_ref=VarRef(variable=Variable(name="var01a", type=VAR_TYPE_BOOL)),
-                                     label="trifft völlig zu"))
+                                      label="trifft völlig zu"))
     ao_list_it1.append(MCAnswerOption(uid='ao2', var_ref=VarRef(variable=Variable(name="var01b", type=VAR_TYPE_BOOL)),
-                                     label="trifft völlig zu"))
+                                      label="trifft völlig zu"))
     ao_list_it1.append(MCAnswerOption(uid='ao3', var_ref=VarRef(variable=Variable(name="var01c", type=VAR_TYPE_BOOL)),
-                                     label="trifft völlig zu"))
+                                      label="trifft völlig zu"))
     ao_list_it1.append(MCAnswerOption(uid='ao4', var_ref=VarRef(variable=Variable(name="var01d", type=VAR_TYPE_BOOL)),
-                                     label="trifft völlig zu"))
+                                      label="trifft völlig zu"))
     ao_list_it1.append(MCAnswerOption(uid='ao5', var_ref=VarRef(variable=Variable(name="var01e", type=VAR_TYPE_BOOL)),
-                                     label="trifft völlig zu", missing=True))
+                                      label="trifft völlig zu", missing=True))
 
     ao_list_it2 = []
     ao_list_it2.append(MCAnswerOption(uid='ao1', var_ref=VarRef(variable=Variable(name="var02a", type=VAR_TYPE_BOOL)),
-                                     label="trifft völlig zu"))
+                                      label="trifft völlig zu"))
     ao_list_it2.append(MCAnswerOption(uid='ao2', var_ref=VarRef(variable=Variable(name="var02b", type=VAR_TYPE_BOOL)),
-                                     label="trifft völlig zu"))
+                                      label="trifft völlig zu"))
     ao_list_it2.append(MCAnswerOption(uid='ao3', var_ref=VarRef(variable=Variable(name="var02c", type=VAR_TYPE_BOOL)),
-                                     label="trifft völlig zu"))
+                                      label="trifft völlig zu"))
     ao_list_it2.append(MCAnswerOption(uid='ao4', var_ref=VarRef(variable=Variable(name="var02d", type=VAR_TYPE_BOOL)),
-                                     label="trifft völlig zu"))
+                                      label="trifft völlig zu"))
     ao_list_it2.append(MCAnswerOption(uid='ao5', var_ref=VarRef(variable=Variable(name="var02e", type=VAR_TYPE_BOOL)),
-                                     label="trifft völlig zu", missing=True))
+                                      label="trifft völlig zu", missing=True))
 
     title_missing_list = []
 
@@ -642,7 +648,7 @@ def example_mqmc():
                        header_list=[HeaderQuestion(uid="q1",
                                                    content="Meine Eltern finden, dass ich ein gutes Studienfach gewählt habe.")],
                        response_domain=MCResponseDomain(uid="rd", ao_list=ao_list_it))
-                        # ToDo: Multiple Choice Response Domain works differently from SC!
+    # ToDo: Multiple Choice Response Domain works differently from SC!
     it_list.append(it1)
 
     var_ref2 = VarRef(variable=Variable(name="foc680", type=VAR_TYPE_SC))
@@ -743,9 +749,9 @@ def example_mc_edit():
 
     rd = MCResponseDomain(ao_list=ao_list)
 
-    qsc = ZofarQuestionMC(uid="mce", header_list=header_list, response_domain=rd)
+    ms = ZofarQuestionMC(uid="mce", header_list=header_list, response_domain=rd)
 
-    return qsc
+    return mc
 
 
 def check_for_unique_uids(list_of_elements: List[ZofarPageObject]) -> bool:
@@ -787,7 +793,8 @@ if __name__ == '__main__':
     q_list.append(example_mqmc())
     q_list.append(example_oq())
 
-    qml_str = '\n'.join([l_to_string(question.gen_xml(), pretty_print=True, encoding='utf-8').decode('utf-8') for question in q_list])
+    qml_str = '\n'.join(
+        [l_to_string(question.gen_xml(), pretty_print=True, encoding='utf-8').decode('utf-8') for question in q_list])
     pass
     z = qml_str.replace('xmlns:zofar="http://www.his.de/zofar/xml/questionnaire" ', '')
     pass
