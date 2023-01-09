@@ -1,6 +1,7 @@
 from pathlib import Path
 
-from qrt.util.qml import read_xml, Questionnaire
+from qrt.util.qml import read_xml
+from qrt.util.questionnaire import Questionnaire
 
 
 def test_qml_path():

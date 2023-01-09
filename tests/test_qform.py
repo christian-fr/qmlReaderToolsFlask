@@ -1,7 +1,7 @@
 from unittest import TestCase
 from tests.context import test_qml_path, test_questionnaire
 from qrt.util.util import qml_details
-from qrt.util.qml import Questionnaire
+from qrt.util.questionnaire import Questionnaire
 from qform import prepare_dict_for_html
 
 

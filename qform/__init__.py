@@ -10,7 +10,8 @@ from tempfile import TemporaryDirectory
 import time
 import random
 from string import hexdigits
-from qrt.util.qml import read_xml, Questionnaire, VarRef
+from qrt.util.qml import read_xml
+from qrt.util.questionnaire import Questionnaire, VarRef
 
 app = Flask(__name__)
 app.debug = True

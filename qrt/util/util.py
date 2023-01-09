@@ -2,7 +2,8 @@ import re
 from collections import defaultdict, OrderedDict
 from pathlib import Path
 from typing import Any, Dict, Optional, Generator, List, Union, Tuple
-from qrt.util.qml import read_xml, Questionnaire, ZOFAR_PAGE_TAG, NS
+from qrt.util.qml import read_xml, ZOFAR_PAGE_TAG, NS
+from qrt.util.questionnaire import Questionnaire
 import networkx as nx
 import pygraphviz
 from lxml.etree import ElementTree as lEt
