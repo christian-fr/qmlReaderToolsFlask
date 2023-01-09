@@ -10,8 +10,7 @@ from tempfile import TemporaryDirectory
 import time
 import random
 from string import hexdigits
-from qrt.util.qml import read_xml
-from qrt.util.questionnaire import Questionnaire, VarRef
+from qrt.util.qml import read_xml, Questionnaire, VarRef
 
 app = Flask(__name__)
 app.debug = True
@@ -163,7 +162,6 @@ def serialize(obj):
         return {obj.variable.name: [obj.variable.type, obj.condition]}
 
     return obj.__dict__
-
 
 
 def prepare_dict_for_html(input_dict) -> Dict[str, List[str]]:
