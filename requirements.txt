@@ -4,3 +4,4 @@ networkx~=2.8.8
 lxml~=4.9.2
 pygraphviz~=1.9
 python-dotenv~=0.21.0
+Flask-Limiter~=3.1.0

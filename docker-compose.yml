@@ -4,3 +4,6 @@ services:
     build: .
     ports:
       - "8000:5000"
+    environment:
+      FLASK_USER: " "
+      FLASK_PASS: " "
