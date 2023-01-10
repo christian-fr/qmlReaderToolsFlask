@@ -1,11 +1,12 @@
 import os
+import re
 import secrets
 from collections import OrderedDict, defaultdict
 from functools import wraps
 from pathlib import Path
-from typing import Any, Dict, Optional, List, Union
+from typing import Any, Dict, Optional, List, Union, Tuple
 from qrt.util.util import qml_details, make_flowchart
-from flask import Flask, render_template, request, json, send_file, session, flash
+from flask import Flask, render_template, request, json, send_file, session, flash, Request
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from werkzeug.utils import secure_filename, redirect
@@ -43,6 +44,8 @@ GEN_DICT = None
 def login_restricted(func):
     @wraps(func)
     def func_wrapper(*args, **kwargs):
+        if flask_user is None or flask_pass is None:
+            session['logged_in'] = True
         if not session.get('logged_in'):
             return render_template('login.html')
         else:
@@ -120,7 +123,8 @@ def index():
 @limiter.limit("10/minute")
 def do_login():
     if flask_user is None or flask_pass is None:
-        flash('no users have been set, login is not possible')
+        session['logged_in'] = True
+        # flash('no users have been set, login is not possible')
         return index()
     if request.form['username'] == flask_user and request.form['password'] == flask_pass:
         session['logged_in'] = True
@@ -184,6 +188,23 @@ def nested_dict(input_dict: Dict[str, str], prefix: str) -> Dict[int, Dict[str, 
     return result
 
 
+def get_action_obj(input_request: Request) -> Optional[Tuple[str, int, str]]:
+    for action in ['down', 'up', 'remove']:
+        if action in request.form:
+            target = request.form[action]
+            obj_type = None
+            if target.startswith('header'):
+                obj_type = 'header'
+            elif target.startswith('ao'):
+                obj_type = 'ao'
+            elif target.startswith('item'):
+                obj_type = 'item'
+
+            obj_index = int(target.replace(obj_type, ''))
+            return action, obj_index, obj_type
+    return None
+
+
 @app.route('/gen_mqsc', methods=['POST'])
 def form_mqsc_post():
     data = {'type': request.form['type'],
@@ -198,12 +219,46 @@ def form_mqsc_post():
         if action == 'clear':
             data.clear()
         elif action == 'add_header':
-            pass
+            tmp_dict = {max(data['headers'].keys()) + 1: {'uid': f'q{max(data["headers"].keys()) + 1}',
+                                                          'visible': '',
+                                                          'type': 'question',
+                                                          'value': '',
+                                                          'text': ''}}
+            data['headers'].update(tmp_dict)
+
         elif action == 'add_item':
             pass
         elif action == 'add_ao':
             pass
+        elif action == 'gen_xml':
+            pass
 
+    action_data = get_action_obj(request)
+    if action_data is not None:
+        obj_action, obj_index, obj_type = action_data
+        if obj_action == 'remove':
+            if obj_index in data[obj_type + 's']:
+                data[obj_type + 's'].pop(obj_index)
+        if obj_index in data[obj_type + 's']:
+            if obj_action == 'up':
+                tmp_dict = {obj_index - 1: data[obj_type + 's'][obj_index],
+                            obj_index: data[obj_type + 's'][obj_index - 1]}
+                data[obj_type + 's'].pop(obj_index - 1)
+                data[obj_type + 's'].pop(obj_index)
+                data[obj_type + 's'].update(tmp_dict)
+
+            elif obj_action == 'down':
+                tmp_dict = {obj_index + 1: data[obj_type + 's'][obj_index],
+                            obj_index: data[obj_type + 's'][obj_index + 1]}
+                data[obj_type + 's'].pop(obj_index + 1)
+                data[obj_type + 's'].pop(obj_index)
+                data[obj_type + 's'].update(tmp_dict)
+        new_dict = {}
+        for k in sorted(data[obj_type + 's']):
+            new_index = len(new_dict) + 1
+            new_dict[new_index] = data[obj_type + 's'][k]
+            new_dict[new_index]['uid'] = re.sub(r'[0-9]+', '', data[obj_type + 's'][k]['uid']) + str(new_index)
+        data[obj_type + 's'] = new_dict
     gen_dict().clear()
     gen_dict().update(data)
     return render_template('gen_mqsc.html', gen_data=gen_dict())

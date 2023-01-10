@@ -77,10 +77,16 @@
                 </tr>
                 <tr>
                     <td colspan="3">
-                        <button class="favorite styled" type="submit" value="header{{ i }}" name="up">up</button>
+                        {% if i != 1 %}
+                            <button class="favorite styled" type="submit" value="header{{ i }}" name="up">up</button>
+                        {% endif %}
+                        {% if i != gen_data['headers']|length %}
+                            <button class="favorite styled" type="submit" value="header{{ i }}" name="down">down
+                            </button>
+                        {% endif %}
+
                         <button class="favorite styled" type="submit" value="header{{ i }}" name="remove">remove
                         </button>
-                        <button class="favorite styled" type="submit" value="header{{ i }}" name="down">down</button>
                     </td>
                 </tr>
             {% endfor %}
@@ -93,47 +99,51 @@
         <h2> answer options</h2>
         <table>
             {% for i, ao in gen_data['aos'].items() %}
-            <tr>
-                <td>
-                    <div class="form-generate">
-                        <p><label for="ao{{ i }}_uid">uid</label></p>
-                        <p><input type="text" name="ao{{ i }}_uid" id="ao{{ i }}_uid" size="4" value="{{ ao['uid'] }}"></p>
-                    </div>
-                </td>
-                <td>
-                    <div class=" form-generate">
-                        <p><label for="ao{{ i }}_value">value</label></p>
-                        <p><input type="text" name="ao{{ i }}_value" id="ao{{ i }}_value" size="5" value="{{ ao['value'] }}"></p>
-                    </div>
-                </td>
-                <td>
-                    <div class="form-generate">
-                        <p><label for="ao{{ i }}_label">label</label></p>
-                        <p><input type="text" name="ao{{ i }}_label" id="ao{{ i }}_label" size="45" value="{{ ao['label'] }}"></p>
-                    </div>
-                </td>
-                <td>
-                    <div class="form-generate">
-                        <p><label for="ao{{ i }}_missing">missing</label></p>
-                        <p><input type="checkbox" name="ao{{ i }}_missing" id="ao{{ i }}_missing" {{ "checked" if 'missing' in ao }}></p>
-                    </div>
-                </td>
-            </tr>
-            <tr>
-                <td colspan="4">
-                    <div class="form-generate">
-                        <p><label for="ao{{ i }}_visible">visible</label></p>
-                        <p><input type="text" name="ao{{ i }}_visible" id="ao{{ i }}_visible" size="75"></p>
-                    </div>
-                </td>
-            </tr>
-            <tr>
-                <td colspan="3">
-                    <button class="favorite styled" type="submit" value="ao1" name="up">up</button>
-                    <button class="favorite styled" type="submit" value="ao1" name="remove">remove</button>
-                    <button class="favorite styled" type="submit" value="ao1" name="down">down</button>
-                </td>
-            </tr>
+                <tr>
+                    <td>
+                        <div class="form-generate">
+                            <p><label for="ao{{ i }}_uid">uid</label></p>
+                            <p><input type="text" name="ao{{ i }}_uid" id="ao{{ i }}_uid" size="4"
+                                      value="{{ ao['uid'] }}"></p>
+                        </div>
+                    </td>
+                    <td>
+                        <div class=" form-generate">
+                            <p><label for="ao{{ i }}_value">value</label></p>
+                            <p><input type="text" name="ao{{ i }}_value" id="ao{{ i }}_value" size="5"
+                                      value="{{ ao['value'] }}"></p>
+                        </div>
+                    </td>
+                    <td>
+                        <div class="form-generate">
+                            <p><label for="ao{{ i }}_label">label</label></p>
+                            <p><input type="text" name="ao{{ i }}_label" id="ao{{ i }}_label" size="45"
+                                      value="{{ ao['label'] }}"></p>
+                        </div>
+                    </td>
+                    <td>
+                        <div class="form-generate">
+                            <p><label for="ao{{ i }}_missing">missing</label></p>
+                            <p><input type="checkbox" name="ao{{ i }}_missing"
+                                      id="ao{{ i }}_missing" {{ "checked" if 'missing' in ao }}></p>
+                        </div>
+                    </td>
+                </tr>
+                <tr>
+                    <td colspan="4">
+                        <div class="form-generate">
+                            <p><label for="ao{{ i }}_visible">visible</label></p>
+                            <p><input type="text" name="ao{{ i }}_visible" id="ao{{ i }}_visible" size="75"></p>
+                        </div>
+                    </td>
+                </tr>
+                <tr>
+                    <td colspan="3">
+                        <button class="favorite styled" type="submit" value="ao1" name="up">up</button>
+                        <button class="favorite styled" type="submit" value="ao1" name="remove">remove</button>
+                        <button class="favorite styled" type="submit" value="ao1" name="down">down</button>
+                    </td>
+                </tr>
             {% endfor %}
         </table>
 
@@ -185,7 +195,7 @@
         <hr>
 
         <button class="favorite styled" type="submit" value="gen_xml" name="submit">add ao</button>
-        <button class="favorite styled" type="submit" value="clear" name="submit">add ao</button>
+        <button class="favorite styled" type="submit" value="clear" name="clear">add ao</button>
 
     </div>
 </form>
