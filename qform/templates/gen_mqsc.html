@@ -8,16 +8,21 @@
 <form method="post">
     <input type="hidden" name="type" value="mqsc"/>
     <div id="mqsc">
-        <h3>single choice matrix</h3>
+        <h1>single choice matrix</h1>
 
         <div class="form-generate">
             <p><label for="question_uid">uid</label></p>
             <p><input type="text" name="question_uid" id="question_uid" size="4"></p>
         </div>
 
+        <div class="form-generate">
+            <p><label for="question_visible">visible</label></p>
+            <p><input type="text" name="question_visible" id="question_visible" size="45"></p>
+        </div>
+
         <hr>
 
-        <h4> question header</h4>
+        <h2> question header</h2>
         <table>
             <tr>
                 <td>
@@ -61,7 +66,7 @@
                 </td>
             </tr>
             <tr>
-                <td>
+                <td colspan="3">
                     <button class="favorite styled" type="submit" value="header1" name="up">up</button>
                     <button class="favorite styled" type="submit" value="header1" name="remove">remove</button>
                     <button class="favorite styled" type="submit" value="header1" name="down">down</button>
@@ -74,7 +79,7 @@
 
         <hr>
 
-        <h4> answer options</h4>
+        <h2> answer options</h2>
         <table>
             <tr>
                 <td>
@@ -112,7 +117,7 @@
             </tr>
 
             <tr>
-                <td>
+                <td colspan="3">
                     <button class="favorite styled" type="submit" value="ao1" name="up">up</button>
                     <button class="favorite styled" type="submit" value="ao1" name="remove">remove</button>
                     <button class="favorite styled" type="submit" value="ao1" name="down">down</button>
@@ -125,7 +130,7 @@
 
         <hr>
 
-        <h4> items </h4>
+        <h2> items </h2>
         <table>
             <tr>
                 <td>
@@ -143,12 +148,12 @@
                 <td>
                     <div class="form-generate">
                         <p><label for="item1_text">label</label></p>
-                        <p><input type="text" name="item1_text" id="item1_text" size="40"></p>
+                        <p><input type="text" name="item1_text" id="item1_text" size="50"></p>
                     </div>
                 </td>
             </tr>
             <tr>
-                <td colspan="4">
+                <td colspan="3">
                     <div class="form-generate">
                         <p><label for="item1_visible">visible</label></p>
                         <p><input type="text" name="item1_visible" id="item1_visible" size="75"></p>
@@ -156,7 +161,7 @@
                 </td>
             </tr>
             <tr>
-                <td>
+                <td colspan="3">
                     <button class="favorite styled" type="submit" value="item1" name="up">up</button>
                     <button class="favorite styled" type="submit" value="item1" name="remove">remove</button>
                     <button class="favorite styled" type="submit" value="item1" name="down">down</button>
