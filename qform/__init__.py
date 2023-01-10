@@ -4,7 +4,7 @@ from collections import OrderedDict, defaultdict
 from pathlib import Path
 from typing import Any, Dict, Optional, List
 from qrt.util.util import qml_details, make_flowchart
-from flask import Flask, render_template, request, json, send_file
+from flask import Flask, render_template, request, json, send_file, session
 from werkzeug.utils import secure_filename, redirect
 from tempfile import TemporaryDirectory
 import time
@@ -56,7 +56,16 @@ def gen_dict():
     if GEN_DICT is None:
         GEN_DICT = {}
 
-    return GEN_DICT
+    if 'session_id' not in GEN_DICT:
+        GEN_DICT['session_id'] = {}
+
+    return GEN_DICT['session_id']
+
+
+@app.before_request
+def init_session():
+    if 'session_id' not in session:
+        session['session_id'] = randstr(20)
 
 
 @app.route('/')
@@ -73,10 +82,31 @@ def upload():
 
 @app.route('/gen_mqsc', methods=['GET'])
 def form_mqsc():
-    data = gen_dict()
-    if data == {}:
-        data = {}
-    return render_template('gen_mqsc.html', gen_data=data)
+    gen_data = gen_dict()
+    if gen_data == {}:
+        gen_data = {'type': 'mqsc',
+                    'q_uid': 'mqsc',
+                    'q_visible': '',
+                    'headers': {
+                        1: {'uid': 'q',
+                            'type': 'question',
+                            'visible': '',
+                            'text': ''}
+                    },
+                    'aos': {
+                        1: {'uid': 'ao1',
+                            'value': '',
+                            'label': '',
+                            'visible': ''}
+                    },
+                    'items': {
+                        1: {'uid': 'it1',
+                            'variable': '',
+                            'text': '',
+                            'visible': ''}
+                    }
+                    }
+    return render_template('gen_mqsc.html', gen_data=gen_data)
 
 
 def nested_dict(input_dict: Dict[str, str], prefix: str) -> Dict[int, Dict[str, str]]:
@@ -92,17 +122,21 @@ def nested_dict(input_dict: Dict[str, str], prefix: str) -> Dict[int, Dict[str, 
 def form_mqsc_post():
     data = {'type': request.form['type'],
             'q_uid': request.form['question_uid'],
+            'q_visible': request.form['question_visible'],
             'headers': nested_dict(request.form, 'header'),
             'aos': nested_dict(request.form, 'ao'),
             'items': nested_dict(request.form, 'item')
             }
-    action = request.form['submit']
-    if action == 'add_header':
-        pass
-    elif action == 'add_item':
-        pass
-    elif action == 'add_ao':
-        pass
+    if 'submit' in request.form:
+        action = request.form['submit']
+        if action == 'clear':
+            data.clear()
+        elif action == 'add_header':
+            pass
+        elif action == 'add_item':
+            pass
+        elif action == 'add_ao':
+            pass
 
     gen_dict().clear()
     gen_dict().update(data)
