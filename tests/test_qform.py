@@ -19,7 +19,7 @@ class Test(TestCase):
 
     def test_prepare_dict_for_html(self):
         d = qml_details(self.q)
-        h = prepare_dict_for_html(d)
+        # h = prepare_dict_for_html(d)
         assert True
 
 

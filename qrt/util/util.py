@@ -64,8 +64,8 @@ def qml_details(q: Questionnaire, filename: Optional[str] = None) -> Dict[str, D
                                                 'data': q.vars_used_not_declared()}
     # variable declarations
     details_dict['used_but_undeclared_variables_declarations'] = {'title': 'declarations for missing variables',
-                                                                  'data': generate_var_declarations(
-                                                                      q.vars_used_not_declared())}
+                                                                  'data': sorted(generate_var_declarations(
+                                                                      q.vars_used_not_declared()))}
     details_dict['used_zofar_functions'] = {'title': 'zofar functions used',
                                             'description': 'no description yet',
                                             'data': all_zofar_functions(q)}
@@ -122,8 +122,9 @@ def make_flowchart(q: Questionnaire,
                    out_file: Path,
                    filename: Optional[str] = None,
                    show_var: bool = True,
-                   show_cond: bool = True) -> bool:
-    g = digraph(q=q, show_var=show_var, show_cond=show_cond)
+                   show_cond: bool = True,
+                   color_nodes: bool = False) -> bool:
+    g = digraph(q=q, show_var=show_var, show_cond=show_cond, color_nodes=color_nodes)
     # ToDo: add filename
     a = nx.nx_agraph.to_agraph(g)
     if filename is not None:
@@ -135,11 +136,30 @@ def make_flowchart(q: Questionnaire,
 
 def digraph(q: Questionnaire,
             show_var: bool = True,
-            show_cond: bool = True) -> nx.DiGraph:
+            show_cond: bool = True,
+            color_nodes: bool = False) -> nx.DiGraph:
     g = nx.DiGraph()
     tr_tuples = flatten([[(p.uid, t.target_uid, {'label': t.condition}) if t.condition is not None and show_cond
                           else (p.uid, t.target_uid) for t in p.transitions]
                          for p in q.pages])
+    if color_nodes:
+        tr_tuples = [tp for tp in tr_tuples]
+        nodes = set(flatten([tp[0:1] for tp in tr_tuples]))
+        node_beginnings = list({re.findall(r'^[a-zA-Z]+', node)[0] for node in nodes if re.findall(r'^[a-zA-Z]+', node)[0]})
+        # remove all ambiguous beginnings
+        node_beginnings = [s for s in node_beginnings if not any([s.startswith(t) for t in node_beginnings if t != s])]
+        color_list = ['brown4', 'burlywood4', 'cadetblue4', 'chartreuse4', 'chocolate4', 'coral4', 'cornsilk3', 'cyan2',
+                      'darkgoldenrod', 'darkgray', 'darkolivegreen', 'darkorange', 'darkorchid', 'darkred',
+                      'darkseagreen3', 'darkslategray2', 'darkviolet', 'deeppink4', 'deepskyblue4', 'dodgerblue2',
+                      'firebrick2', 'fuchsia', 'gold2', 'goldenrod']
+        sorted(node_beginnings)
+        for node_beginning_color in zip(node_beginnings, color_list):
+            node_beginning, node_color = node_beginning_color
+            if len(node_beginnings) > len(color_list):
+                break
+            else:
+                [g.add_node(u, style='filled', fillcolor=node_color) for u in nodes if u.startswith(node_beginning)]
+
     g.add_edges_from([t for t in tr_tuples])
 
     if show_var:

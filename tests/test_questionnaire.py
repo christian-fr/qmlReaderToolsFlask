@@ -331,21 +331,22 @@ class TestQuestionnaire(TestCase):
 
     def test_example_qsc01(self):
         header_list = [HeaderQuestion(uid="q1",
-                                      content="Wo arbeiten Sie vornehmlich an Ihrer Promotion?")]
+                                      content="Wie zufrieden waren Sie mit Ihrem Einstieg als Mitarbeiter*in an der RWTH?")]
 
         ao_list = []
-        ao_list.append(SCAnswerOption(uid=f"ao{len(ao_list) + 1}", value=f"{len(ao_list) + 1}", label="Zu Hause"))
-        ao_list.append(SCAnswerOption(uid=f"ao{len(ao_list) + 1}", value=f"{len(ao_list) + 1}", label="Im Labor"))
-        ao_list.append(SCAnswerOption(uid=f"ao{len(ao_list) + 1}", value=f"{len(ao_list) + 1}", label="Am Institut"))
-        ao_list.append(SCAnswerOption(uid=f"ao{len(ao_list) + 1}", value=f"{len(ao_list) + 1}", label="In der Bibliothek"))
-        ao_list.append(SCAnswerOption(uid=f"ao{len(ao_list) + 1}", value=f"{len(ao_list) + 1}", label="Sonstiges"))
+        ao_list.append(SCAnswerOption(uid=f"ao{len(ao_list) + 1}", value=f"{len(ao_list) + 1}", label="überhaupt nicht zufrieden"))
+        ao_list.append(SCAnswerOption(uid=f"ao{len(ao_list) + 1}", value=f"{len(ao_list) + 1}", label=""))
+        ao_list.append(SCAnswerOption(uid=f"ao{len(ao_list) + 1}", value=f"{len(ao_list) + 1}", label=""))
+        ao_list.append(SCAnswerOption(uid=f"ao{len(ao_list) + 1}", value=f"{len(ao_list) + 1}", label=""))
+        ao_list.append(SCAnswerOption(uid=f"ao{len(ao_list) + 1}", value=f"{len(ao_list) + 1}", label="sehr zufrieden"))
+        ao_list.append(SCAnswerOption(uid=f"ao{len(ao_list) + 1}", value=f"{len(ao_list) + 1}", label="keine Angabe", missing=True))
 
 
 
         assert len(ao_list) == len({ao.value for ao in ao_list})
         assert len(ao_list) == len({ao.uid for ao in ao_list})
 
-        var_ref1 = VarRef(variable=Variable(name="axd09", type=VAR_TYPE_SC))
+        var_ref1 = VarRef(variable=Variable(name="axh11", type=VAR_TYPE_SC))
         rd = SCResponseDomain(var_ref=var_ref1, ao_list=ao_list)
 
         qsc = ZofarQuestionSC(uid="qsc1", header_list=header_list, response_domain=rd)
