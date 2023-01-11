@@ -642,6 +642,7 @@ def vars_used(page: _lE) -> List[VarRef]:
 
     var_list = []
     all_var_elements = [ch for ch in page_body.iter() if 'variable' in ch.attrib]
+    # ToDo: refactor this with the new questionnaire element classes!
     for var_element in all_var_elements:
         condition_list = []
         element = var_element
