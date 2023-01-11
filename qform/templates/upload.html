@@ -24,7 +24,7 @@
     </thead>
     <tbody>
     {% for file in uploaded_files %}
-        <tr id="file_{{ file['file_id'] }}"><td>{{ file['filename'] }}</td><td>uploaded</td><td><a href="details/{{ file['file_id'] }}">qml details</a></td><td class="disabled">not yet processed</td><td><a href="remove/{{ file['file_id'] }}">x</a></td></tr>
+        <tr id="file_{{ file['file_id'] }}"><td>{{ file['filename'] }}</td><td>uploaded</td><td><a href="details/{{ file['file_id'] }}" target="_blank">qml details</a></td><td class="disabled">not yet processed</td><td><a href="remove/{{ file['file_id'] }}">x</a></td></tr>
     {% endfor %}
     </tbody>
 </table>

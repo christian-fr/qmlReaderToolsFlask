@@ -531,6 +531,10 @@ class Questionnaire:
         names_missing = set(self.all_vars_declared().keys()).difference(self.all_page_body_vars().keys())
         return {varname: self.all_vars_declared()[varname] for varname in names_missing}
 
+    def dead_end_pages(self):
+        all_transition_sources = [p.transitions for p in self.pages]
+        all_transition_targets = [p.transitions for p in self.pages]
+
     def vars_declared_used_inconsistent(self) -> Dict[str, List[str]]:
         results = defaultdict(set)
         for varname, vartype in self.all_page_body_vars().items():

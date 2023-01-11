@@ -2,8 +2,8 @@ import re
 from collections import defaultdict, OrderedDict
 from pathlib import Path
 from typing import Any, Dict, Optional, Generator, List, Union, Tuple
-from qrt.util.qml import read_xml, ZOFAR_PAGE_TAG, NS
-from qrt.util.questionnaire import Questionnaire
+from qrt.util.qml import Questionnaire, read_xml, ZOFAR_PAGE_TAG, NS
+# from qrt.util.questionnaire import Questionnaire
 import networkx as nx
 import pygraphviz
 from lxml.etree import ElementTree as lEt
@@ -52,6 +52,8 @@ def qml_details(q: Questionnaire, filename: Optional[str] = None) -> Dict[str, D
     details_dict['pages_order_topological'] = {'title': 'pages (in topological order)',
                                                'description': 'empty list if topological sorting is not possible due to cycles',
                                                'data': topo_sorted_pages}
+    details_dict['dead_end_pages'] = {'title': 'dead end pages',
+                                      'data': q.dead_end_pages()}
     details_dict['page_questions'] = {'title': 'questions per page',
                                       'data': q.all_page_questions_dict()}
     details_dict['all_variables_used_per_page'] = {'title': 'variables per page',

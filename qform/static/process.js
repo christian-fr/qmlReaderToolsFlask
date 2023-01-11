@@ -95,7 +95,7 @@ function submit_form() {
             new_row.append('<td>');
             new_row.find('td').eq(0).html(data['filename']);
             new_row.find('td').eq(1).html('uploaded');
-            new_row.find('td').eq(2).html('<a href="details/'+ data['file_id'] + '">qml details</a>');
+            new_row.find('td').eq(2).html('<a href="details/'+ data['file_id'] + '" target="_blank">qml details</a>');
             new_row.find('td').eq(3).html('not yet processed');
             new_row.find('td').eq(4).html('');
 

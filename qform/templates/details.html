@@ -29,7 +29,7 @@
             <!-- <div class="detailsEntry">{{ val['data'] }}</div> -->
 
 
-            {% if val['data'].__class__.__name__ == 'dict' %}
+            {% if val['data'].__class__.__name__ == 'dict' or val['data'].__class__.__name__ == 'OrderedDict' %}
                 <table class="detailsEntry">
                     {% for key2, val2 in val['data'].items() %}
                         <tr>

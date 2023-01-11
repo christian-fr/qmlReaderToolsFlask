@@ -1,6 +1,6 @@
 import argparse
 import copy
-from collections import defaultdict
+from collections import defaultdict, OrderedDict
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Optional, List, Dict, NewType, Union, Tuple, Any
@@ -585,6 +585,31 @@ class Questionnaire:
                     results[varname].add(vartype)
                     results[varname].add(self.all_vars_declared()[varname])
         return {k: list(v) for k, v in results.items()}
+
+    def dead_end_pages(self):
+        all_transition_targets = set(flatten([[tr.target_uid for tr in p.transitions] for p in self.pages]))
+        all_pages = set([p.uid for p in self.pages])
+        lost_pages = all_transition_targets.difference(all_pages)
+        targets_not_found = all_pages.difference(all_transition_targets)
+
+        # only condition="false" targets
+
+        # all condition == '"false"' transition targets
+        condition_false_transitions = set(flatten(
+            [[tr.target_uid for tr in p.transitions if tr.condition is not None and tr.condition.strip() == 'false'] for
+             p in self.pages]))
+
+        # all condition != '"false"' transition targets
+        condition_not_false_transitions = set(flatten(
+            [[tr.target_uid for tr in p.transitions if tr.condition is not None and tr.condition.strip() != 'false'] for
+             p in self.pages]))
+        # set difference
+        only_false_conditions = condition_false_transitions.difference(condition_not_false_transitions)
+
+        return OrderedDict({'all_pages': all_pages,
+                            'lost_pages': lost_pages,
+                            'targets_not_found': targets_not_found,
+                            'only_false_conditions': only_false_conditions})
 
     def vars_used_not_declared(self) -> Dict[str, str]:
         names_missing = set(self.all_page_body_vars().keys()).difference(self.all_vars_declared().keys())
