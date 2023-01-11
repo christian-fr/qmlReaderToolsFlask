@@ -3,6 +3,8 @@ from dataclasses import dataclass, field
 from typing import List, Dict, Optional, Tuple, NewType, Union
 # noinspection PyProtectedMember
 from lxml.etree import _Element as _lE, ElementTree as lEt, tostring as l_to_string
+
+from qrt.util.qml import flatten
 from qrt.util.qmlgen import *
 
 VAR_TYPE_SC = "singleChoiceAnswerOption"
@@ -214,10 +216,15 @@ class SCAnswerOption(AnswerOption):
 @dataclass(kw_only=True)
 class MCAnswerOption(AnswerOption):
     var_ref: VarRef
+    exclusive: bool = False
 
     def gen_xml(self) -> _lE:
-        return AO(*[qo.gen_xml() for qo in self.attached_open_list], uid=self.uid, label=self.label,
-                  visible=self.visible, variable=self.var_ref.variable.name)
+        if not self.exclusive:
+            return AO(*[qo.gen_xml() for qo in self.attached_open_list], uid=self.uid, label=self.label,
+                      visible=self.visible, variable=self.var_ref.variable.name)
+        else:
+            return AO(*[qo.gen_xml() for qo in self.attached_open_list], uid=self.uid, label=self.label,
+                      visible=self.visible, variable=self.var_ref.variable.name, exclusive=str(self.exclusive).lower())
 
 
 # noinspection PyDataclass
@@ -290,7 +297,6 @@ class SCMatrixItem(MatrixItem):
     def gen_xml(self):
         return ITEM(HEADER(*[h.gen_xml() for h in self.header_list]),
                     self.response_domain.gen_xml(),
-                    *[h.gen_xml() for h in self.header_list],
                     *[att_qo.gen_xml() for att_qo in self.attached_open_list],
                     uid=self.uid, visible=self.visible)
 
@@ -326,6 +332,13 @@ class MatrixResponseDomain(ResponseDomain):
         return [it.get_var_refs() for it in self.item_list]
 
     def gen_xml(self):
+        # ensure that header uids are unique
+        it_header_uid = flatten([[it_head.uid for it_head in it.header_list] for it in self.item_list])
+        assert len(it_header_uid) == len(set(it_header_uid))
+
+        # ensure that each item uid is unique
+        assert len(self.item_list) == len(set([it.uid for it in self.item_list]))
+
         ref_ao_list = None
         for it in self.item_list:
             if ref_ao_list is None:
@@ -647,7 +660,7 @@ def example_mqmc():
     it1 = MCMatrixItem(uid="it1",
                        header_list=[HeaderQuestion(uid="q1",
                                                    content="Meine Eltern finden, dass ich ein gutes Studienfach gewählt habe.")],
-                       response_domain=MCResponseDomain(uid="rd", ao_list=ao_list_it))
+                       response_domain=MCResponseDomain(uid="rd", ao_list=ao_list_it1))
     # ToDo: Multiple Choice Response Domain works differently from SC!
     it_list.append(it1)
 
@@ -655,7 +668,7 @@ def example_mqmc():
     it2 = MCMatrixItem(uid="it2",
                        header_list=[HeaderQuestion(uid="q1",
                                                    content="Meine Freundinnen und Freunde finden, dass ich ein gutes Studienfach gewählt habe.")],
-                       response_domain=MCResponseDomain(uid="rd", ao_list=ao_list_it))
+                       response_domain=MCResponseDomain(uid="rd", ao_list=ao_list_it2))
     it_list.append(it2)
 
     matrix_rd.item_list = it_list
@@ -749,7 +762,7 @@ def example_mc_edit():
 
     rd = MCResponseDomain(ao_list=ao_list)
 
-    ms = ZofarQuestionMC(uid="mce", header_list=header_list, response_domain=rd)
+    mc = ZofarQuestionMC(uid="mce", header_list=header_list, response_domain=rd)
 
     return mc
 
