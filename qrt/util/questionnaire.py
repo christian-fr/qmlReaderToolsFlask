@@ -95,7 +95,7 @@ class HeaderTitle(HeaderObject):
     type: str = 'title'
 
     def gen_xml(self):
-        return TITLE(self.content, uid=self.uid, visible=self.visible, block="true")
+        return TITLE(html.escape(self.content), uid=self.uid, visible=self.visible, block="true")
 
 
 # noinspection PyDataclass
@@ -104,7 +104,7 @@ class HeaderText(HeaderObject):
     type: str = 'text'
 
     def gen_xml(self):
-        return TEXT(self.content, uid=self.uid, visible=self.visible, block="true")
+        return TEXT(html.escape(self.content), uid=self.uid, visible=self.visible, block="true")
 
 
 # noinspection PyDataclass
@@ -113,7 +113,7 @@ class HeaderQuestion(HeaderObject):
     type: str = 'question'
 
     def gen_xml(self):
-        return QUE(self.content, uid=self.uid, visible=self.visible, block="true")
+        return QUE(html.escape(self.content), uid=self.uid, visible=self.visible, block="true")
 
 
 # noinspection PyDataclass
@@ -122,7 +122,7 @@ class HeaderIntroduction(HeaderObject):
     type: str = 'introduction'
 
     def gen_xml(self):
-        return INT(self.content, uid=self.uid, visible=self.visible, block="true")
+        return INT(html.escape(self.content), uid=self.uid, visible=self.visible, block="true")
 
 
 # noinspection PyDataclass
@@ -131,7 +131,7 @@ class HeaderInstruction(HeaderObject):
     type: str = 'instruction'
 
     def gen_xml(self):
-        return INS(self.content, uid=self.uid, visible=self.visible, block="true")
+        return INS(html.escape(self.content), uid=self.uid, visible=self.visible, block="true")
 
 
 # noinspection PyDataclass
@@ -205,10 +205,10 @@ class SCAnswerOption(AnswerOption):
 
     def gen_xml(self) -> _lE:
         if self.missing:
-            return AO(*[qo.gen_xml() for qo in self.attached_open_list], uid=self.uid, label=self.label,
+            return AO(*[qo.gen_xml() for qo in self.attached_open_list], uid=self.uid, label=html.escape(self.label),
                       visible=self.visible, value=self.value, missing=str(self.missing).lower())
         else:
-            return AO(*[qo.gen_xml() for qo in self.attached_open_list], uid=self.uid, label=self.label,
+            return AO(*[qo.gen_xml() for qo in self.attached_open_list], uid=self.uid, label=html.escape(self.label),
                       visible=self.visible, value=self.value)
 
 
@@ -220,10 +220,10 @@ class MCAnswerOption(AnswerOption):
 
     def gen_xml(self) -> _lE:
         if not self.exclusive:
-            return AO(*[qo.gen_xml() for qo in self.attached_open_list], uid=self.uid, label=self.label,
+            return AO(*[qo.gen_xml() for qo in self.attached_open_list], uid=self.uid, label=html.escape(self.label),
                       visible=self.visible, variable=self.var_ref.variable.name)
         else:
-            return AO(*[qo.gen_xml() for qo in self.attached_open_list], uid=self.uid, label=self.label,
+            return AO(*[qo.gen_xml() for qo in self.attached_open_list], uid=self.uid, label=html.escape(self.label),
                       visible=self.visible, variable=self.var_ref.variable.name, exclusive=str(self.exclusive).lower())
 
 

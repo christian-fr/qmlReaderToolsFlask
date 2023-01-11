@@ -15,6 +15,7 @@ import time
 import random
 from string import hexdigits
 from qrt.util.qml import read_xml, Questionnaire, VarRef
+from xml.etree.ElementTree import ParseError
 
 app = Flask(__name__)
 app.debug = True
@@ -312,7 +313,15 @@ def process_file(file_id):
         )
 
     # magic
-    process_xml(file_id)
+    try:
+        process_xml(file_id)
+
+    except ParseError as err:
+        return app.response_class(
+            response=json.dumps({'msg': f'error while parsing file: {err.msg}'}),
+            status=400,
+            mimetype='application/json'
+        )
 
     process_graphs(file_id)
 
@@ -364,7 +373,14 @@ def details(file_id):
         )
     else:
         if 'questionnaire' not in file_dict()[file_id]:
-            process_xml(file_id)
+            try:
+                process_xml(file_id)
+            except ParseError as err:
+                return app.response_class(
+                    response=json.dumps({'msg': f'error while parsing file: {err.msg}'}),
+                    status=400,
+                    mimetype='application/json'
+                )
     # return app.response_class(
     #     response=json.dumps({'msg': 'file has not been processed'}),
     #     status=400,

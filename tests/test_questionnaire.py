@@ -8,6 +8,7 @@ from unittest import TestCase
 import lxml.etree
 from lxml.etree import tostring as l_tostring
 
+from qrt.util.qmlgen import unescape_html
 from tests.context import test_qml_path, test_questionnaire
 from tests.context.questionnaire_data import mqsc_example_str
 from qrt.util.util import qml_details
@@ -330,29 +331,26 @@ class TestQuestionnaire(TestCase):
         return None
 
     def test_example_qsc01(self):
-        header_list = [HeaderQuestion(uid="q1",
-                                      content="Wie zufrieden waren Sie mit Ihrem Einstieg als Mitarbeiter*in an der RWTH?")]
+        header_list = [HeaderIntroduction(uid="int1",
+                                          content="""Das Center for Young Academics, kurz CYA, ist die zentrale Anlaufstelle zur Information, Karriereentwicklung und Vernetzung der Promovierenden, Postdocs und Advanced Talents der RWTH Aachen."""),
+                       HeaderQuestion(uid="q1",
+                                      content="Kennen Sie die Angebote des Centers for Young Academics (CYA)?")]
 
         ao_list = []
-        ao_list.append(SCAnswerOption(uid=f"ao{len(ao_list) + 1}", value=f"{len(ao_list) + 1}", label="überhaupt nicht zufrieden"))
-        ao_list.append(SCAnswerOption(uid=f"ao{len(ao_list) + 1}", value=f"{len(ao_list) + 1}", label=""))
-        ao_list.append(SCAnswerOption(uid=f"ao{len(ao_list) + 1}", value=f"{len(ao_list) + 1}", label=""))
-        ao_list.append(SCAnswerOption(uid=f"ao{len(ao_list) + 1}", value=f"{len(ao_list) + 1}", label=""))
-        ao_list.append(SCAnswerOption(uid=f"ao{len(ao_list) + 1}", value=f"{len(ao_list) + 1}", label="sehr zufrieden"))
-        ao_list.append(SCAnswerOption(uid=f"ao{len(ao_list) + 1}", value=f"{len(ao_list) + 1}", label="keine Angabe", missing=True))
-
-
+        ao_list.append(SCAnswerOption(uid=f"ao{len(ao_list) + 1}", value=f"{len(ao_list) + 1}", label="Ja, kenne ich."))
+        ao_list.append(
+            SCAnswerOption(uid=f"ao{len(ao_list) + 1}", value=f"{len(ao_list) + 1}", label="Nein, kenne ich nicht."))
 
         assert len(ao_list) == len({ao.value for ao in ao_list})
         assert len(ao_list) == len({ao.uid for ao in ao_list})
 
-        var_ref1 = VarRef(variable=Variable(name="axh11", type=VAR_TYPE_SC))
+        var_ref1 = VarRef(variable=Variable(name="axh01", type=VAR_TYPE_SC))
         rd = SCResponseDomain(var_ref=var_ref1, ao_list=ao_list)
 
         qsc = ZofarQuestionSC(uid="qsc1", header_list=header_list, response_domain=rd)
 
         y = l_tostring(qsc.gen_xml(), pretty_print=True).decode('utf-8')
-        z = y.replace('xmlns:zofar="http://www.his.de/zofar/xml/questionnaire" ', '')
+        z = unescape_html(y.replace('xmlns:zofar="http://www.his.de/zofar/xml/questionnaire" ', ''))
 
         pass
 
@@ -491,19 +489,20 @@ class TestQuestionnaire(TestCase):
 
     def test_example_mc03(self):
         header_list = [HeaderQuestion(uid="q1",
-                                      content="Haben Sie schon Angebote für Workshops oder für Schulungen von Soft-Skills an der Universität wahrgenommen?"),
+                                      content="Welche Angebote des CYA haben Sie bereits genutzt?"),
                        HeaderInstruction(uid="ins1",
                                          content="Bitte wählen Sie alles Zutreffende aus.")]
 
-        ao_reg_src_list = [('xd05a', 'E-Mail-Newsletter'),
-                           ('xd05b', 'Twitter'),
-                           ('xd05c', 'Facebook'),
-                           ('xd05d', 'Instagram'),
-                           ('xd05e', 'LinkedIn'),
-                           ('xd05f', 'Messenger-Dienste wie WhatsApp, Signal etc.'),
-                           ('xd05g', 'Website'),
-                           ('xd05h', 'Aushänge, Plakate, Flyer etc. in den Gebäuden der Uni Bonn')]
-        # ao_exc_src_list = [('axd04d', 'Nein, bisher nicht')]
+        ao_reg_src_list = [('axh03a', 'Seminare und Workshops'),
+                           ('axh03b', 'Promotionssupplement'),
+                           ('axh03c', 'Young Academics Day'),
+                           ('axh03d', 'Advanced Talents Day'),
+                           ('axh03e', 'Veranstaltung "Wege in der Wissenschaft"'),
+                           ('axh03f', 'Einzelcoaching'),
+                           ('axh03g', 'Mentoring'),
+                           ('axh03h', 'Orientierungs- und Karriereberatungsgespräche')]
+        # ao_exc_src_list = [('axd0m', 'Ich kenne keines dieser Angebote')]
+        ao_exc_src_list = []
 
         ao_list = []
 
@@ -512,11 +511,12 @@ class TestQuestionnaire(TestCase):
             ao_list.append(MCAnswerOption(uid=f"ao{len(ao_list) + 1}", label=content,
                                           var_ref=VarRef(variable=Variable(name=var_name, type=VAR_TYPE_BOOL))))
 
-        # for ao in ao_exc_src_list:
-        #     var_name, content = ao
-        #     ao_list.append(MCAnswerOption(uid=f"ao{len(ao_list) + 1}", label=content,
-        #                                   var_ref=VarRef(variable=Variable(name=var_name, type=VAR_TYPE_BOOL)),
-        #                                   exclusive=True))
+        if ao_exc_src_list:
+            for ao in ao_exc_src_list:
+                var_name, content = ao
+                ao_list.append(MCAnswerOption(uid=f"ao{len(ao_list) + 1}", label=content,
+                                              var_ref=VarRef(variable=Variable(name=var_name, type=VAR_TYPE_BOOL)),
+                                              exclusive=True))
 
         # att_open = ZofarQuestionOpen(uid="open", var_ref=VarRef(variable=Variable(name="ap09g", type=VAR_TYPE_STR)))
         # ao_list.append(MCAnswerOption(uid="ao7", label="Sonstige, und zwar:",
@@ -531,6 +531,6 @@ class TestQuestionnaire(TestCase):
 
         mc = ZofarQuestionMC(uid="mc", header_list=header_list, response_domain=rd)
         y = l_tostring(mc.gen_xml(), pretty_print=True).decode('utf-8')
-        z = y.replace('xmlns:zofar="http://www.his.de/zofar/xml/questionnaire" ', '')
+        z = unescape_html(y.replace('xmlns:zofar="http://www.his.de/zofar/xml/questionnaire" ', ''))
 
         pass

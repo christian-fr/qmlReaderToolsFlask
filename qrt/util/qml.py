@@ -606,10 +606,10 @@ class Questionnaire:
         # set difference
         only_false_conditions = condition_false_transitions.difference(condition_not_false_transitions)
 
-        return OrderedDict({'all_pages': all_pages,
-                            'lost_pages': lost_pages,
-                            'targets_not_found': targets_not_found,
-                            'only_false_conditions': only_false_conditions})
+        return OrderedDict({'all_pages': sorted(list(all_pages)),
+                            'lost_pages': sorted(list(lost_pages)),
+                            'targets_not_found': sorted(list(targets_not_found)),
+                            'only_false_conditions': sorted(list(only_false_conditions))})
 
     def vars_used_not_declared(self) -> Dict[str, str]:
         names_missing = set(self.all_page_body_vars().keys()).difference(self.all_vars_declared().keys())
