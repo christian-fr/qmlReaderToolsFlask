@@ -51,6 +51,8 @@ function trigger_process(file_ids) {
                 trigger_process(file_ids.slice(1));
             },
             error: function (request, error) {
+                var resp = $.parseJSON(request.responseText);
+                alert('error: ' + resp.msg);
                 $("#file_" + file_id).find('td').eq(1).html("error");
                 trigger_process(file_ids.slice(1));
             }

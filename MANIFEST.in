@@ -1,0 +1,3 @@
+include qform/static/*.css
+include qform/static/*.js
+include qform/templates/*.html
