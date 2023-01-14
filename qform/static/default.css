@@ -23,3 +23,8 @@ ul.detailsEntry {
     background: #e4f0f5;
     padding: 5px;
 }
+
+.footer {
+    margin-top: 3rem;
+    font-size: small;
+}

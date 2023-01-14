@@ -4,7 +4,8 @@ from typing import List, Dict, Optional, Tuple, NewType, Union
 # noinspection PyProtectedMember
 from lxml.etree import _Element as _lE, ElementTree as lEt, tostring as l_to_string
 
-from qrt.util.qml import flatten
+from qrt.util.qml import flatten, HEADER, MIS_HEADER, QSC, MC, MMC, MQSC, QO, ATTQO, MQO, RD, AO, ITEM, TITLE, TEXT, \
+    INS, INT, QUE
 from qrt.util.qmlgen import *
 
 VAR_TYPE_SC = "singleChoiceAnswerOption"

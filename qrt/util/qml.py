@@ -6,6 +6,8 @@ from pathlib import Path
 from typing import Optional, List, Dict, NewType, Union, Tuple, Any
 import re
 from xml.etree import ElementTree
+
+from lxml.builder import ElementMaker
 from lxml.etree import ElementTree as lEt
 from lxml.etree import _Element as _lE
 from lxml.etree import _Comment as _lC
@@ -69,6 +71,33 @@ RE_TO_PERSIST = re.compile(r"^\s*toPersist\.put\('([0-9a-zA-Z_]+)',[a-zA-Z0-9_.]
 
 RE_REDIRECT_TRIG = re.compile(r"^\s*navigatorBean\.redirect\('([a-zA-Z0-9_]+)'\)\s*$")
 RE_REDIRECT_TRIG_AUX = re.compile(r"^\s*navigatorBean\.redirect\(([a-zA-Z0-9_]+)\)\s*$")
+
+
+ZOFAR_NS_URI_E = "http://www.his.de/zofar/xml/questionnaire"
+NS_E = {"zofar": ZOFAR_NS_URI}
+E = ElementMaker(namespace=ZOFAR_NS_URI_E, nsmap=NS_E)
+PAGE = E.page
+HEADER = E.header
+MIS_HEADER = E.missingHeader
+BODY = E.body
+SECTION = E.section
+UNIT = E.unit
+QSC = E.questionSingleChoice
+MC = E.multipleChoice
+MMC = E.matrixMultipleChoice
+MQSC = E.matrixQuestionSingleChoice
+QO = E.questionOpen
+ATTQO = E.attachedOpen
+MQO = E.matrixQuestionOpen
+RD = E.responseDomain
+AO = E.answerOption
+ITEM = E.item
+TITLE = E.title
+TEXT = E.text
+INS = E.instruction
+INT = E.introduction
+QUE = E.question
+
 
 
 def flatten(ll):
@@ -738,3 +767,4 @@ if __name__ == '__main__':
     main(**ns.__dict__)
 
     pass
+

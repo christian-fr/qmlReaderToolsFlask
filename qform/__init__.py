@@ -8,6 +8,7 @@ from typing import Any, Dict, Optional, List, Union, Tuple
 
 import pkg_resources
 
+from qrt.util.qmlgen import gen_mqsc
 from qrt.util.util import qml_details
 from qrt.util.graph import make_flowchart
 from flask import Flask, render_template, request, json, send_file, session, flash, Request
@@ -122,7 +123,7 @@ def init_session():
 
 
 @app.route('/')
-#@login_restricted
+# @login_restricted
 def index():
     # if not session.get('logged_in'):
     #     return render_template('login.html')
@@ -154,7 +155,7 @@ def get_flashed_messages():
 
 
 @app.route('/upload', methods=['GET'])
-#@login_restricted
+# @login_restricted
 def upload():
     uploaded_files = [{k: v for k, v in f.items() if k not in ['questionnaire']} for f in file_dict().values()]
     # uploaded_files = list(file_dict().values())
@@ -242,7 +243,8 @@ def form_mqsc_post():
         elif action == 'add_ao':
             pass
         elif action == 'gen_xml':
-            pass
+            data['qml'] = generate_mqsc()
+            data['html'] = "html"
 
     action_data = get_action_obj(request)
     if action_data is not None:
@@ -277,7 +279,7 @@ def form_mqsc_post():
 
 @app.route('/api/gen_mqsc', methods=['POST'])
 def generate_mqsc():
-    pass
+    return gen_mqsc()
 
 
 def process_xml(file_id) -> None:
@@ -305,7 +307,7 @@ def process_graphs(file_id):
 
 
 @app.route('/api/process/<file_id>', methods=['GET'])
-#@login_restricted
+# @login_restricted
 def process_file(file_id):
     if file_id not in file_dict():
         return app.response_class(
@@ -355,7 +357,7 @@ def process_file(file_id):
 
 
 @app.route('/api/details/<file_id>', methods=['GET'])
-#@login_restricted
+# @login_restricted
 def file_details(file_id):
     if file_id not in file_dict():
         return app.response_class(
@@ -385,7 +387,7 @@ def file_details(file_id):
 
 
 @app.route('/details/<file_id>', methods=['GET'])
-#@login_restricted
+# @login_restricted
 def details(file_id):
     if file_id not in file_dict():
         return app.response_class(
@@ -455,7 +457,7 @@ def serialize(obj):
 
 
 @app.route('/flowchart/<file_id>', methods=['GET'])
-#@login_restricted
+# @login_restricted
 def flowchart(file_id):
     flowchart_i = file_id[file_id.rfind('_') + 1:]
     file_id = file_id[:file_id.rfind('_')]
@@ -479,7 +481,7 @@ def flowchart(file_id):
 
 
 @app.route('/api/upload', methods=['POST'])
-#@login_restricted
+# @login_restricted
 def upload_file():
     if 'file' not in request.files:
         return app.response_class(
@@ -509,7 +511,7 @@ def upload_file():
 
 
 @app.route('/api/remove/<file_id>', methods=['GET'])
-#@login_restricted
+# @login_restricted
 def remove_file(file_id):
     if file_id not in file_dict():
         return app.response_class(
@@ -528,7 +530,7 @@ def remove_file(file_id):
 
 
 @app.route('/remove/<file_id>', methods=['GET'])
-#@login_restricted
+# @login_restricted
 def remove_file_link(file_id):
     if file_id not in file_dict():
         return app.response_class(
