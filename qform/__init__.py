@@ -297,6 +297,7 @@ def form_mqsc_post():
         for k in sorted(data[obj_type + 's']):
             new_index = len(new_dict) + 1
             new_dict[new_index] = data[obj_type + 's'][k]
+            # ToDo: comment and fix line below
             new_dict[new_index]['uid'] = re.sub(r'[0-9]+', '', data[obj_type + 's'][k]['uid']) + str(new_index)
         data[obj_type + 's'] = new_dict
     gen_dict().clear()
