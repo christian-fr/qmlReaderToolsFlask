@@ -231,6 +231,10 @@ def form_mqsc_post():
         if action == 'clear':
             data.clear()
         elif action == 'add_header':
+            if len(data['headers']) == 0:
+                new_key = 1
+            else:
+                new_key = max(data['headers'].keys()) + 1
             tmp_dict = {max(data['headers'].keys()) + 1: {'uid': f'q{max(data["headers"].keys()) + 1}',
                                                           'visible': '',
                                                           'type': 'question',
@@ -239,12 +243,27 @@ def form_mqsc_post():
             data['headers'].update(tmp_dict)
 
         elif action == 'add_item':
-            pass
+            tmp_dict = {max(data['items'].keys()) + 1: {'uid': f'q{max(data["items"].keys()) + 1}',
+                                                        'variable': '',
+                                                        'label': '',
+                                                        'visible': ''
+                                                        }}
+            data['items'].update(tmp_dict)
+
         elif action == 'add_ao':
-            pass
+            tmp_dict = {max(data['aos'].keys()) + 1: {'uid': f'q{max(data["aos"].keys()) + 1}',
+                                                      'value': '',
+                                                      'label': '',
+                                                      'visible': ''
+                                                      }}
+            data['aos'].update(tmp_dict)
+
         elif action == 'gen_xml':
             data['qml'] = generate_mqsc()
             data['html'] = "html"
+
+        elif action == 'update':
+            pass
 
     action_data = get_action_obj(request)
     if action_data is not None:
