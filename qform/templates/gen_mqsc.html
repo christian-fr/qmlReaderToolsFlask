@@ -55,17 +55,17 @@
                         </label>
                         </p>
                     </td>
-                    <td>
-                        <div class="form-generate">
-                            <p><label for="header{{ i }}_type">value</label></p>
-                            <p><input type="text" name="header{{ i }}_value" id="header{{ i }}_type" size="5"
-                                      value="{{ header['value'] }}"></p>
-                        </div>
-                    </td>
-                    <td>
+{#                    <td>#}
+{#                        <div class="form-generate">#}
+{#                            <p><label for="header{{ i }}_type">value</label></p>#}
+{#                            <p><input type="text" name="header{{ i }}_value" id="header{{ i }}_type" size="5"#}
+{#                                      value="{{ header['value'] }}"></p>#}
+{#                        </div>#}
+{#                    </td>#}
+                    <td colspan="2">
                         <div class="form-generate">
                             <p><label for="header{{ i }}_text">header text</label></p>
-                            <p><input type="text" name="header{{ i }}_text" id="header{{ i }}_text" size="40"
+                            <p><input type="text" name="header{{ i }}_text" id="header{{ i }}_text" size="50"
                                       value="{{ header['text'] }}"></p>
                         </div>
                     </td>
@@ -245,11 +245,6 @@
             {% endfor %}
             <div id="form:example:mqsc:rd" class="form-orientation form-responsive ">
                 <div class="form-scroller">
-                    <div class="question-sub">
-                        <div class="container"><p class="text-head hidden-md-up"
-                                                  data-carousel-head-id="form_B17_mqsc2_rd_carousel"
-                                                  style="opacity: 1;">XXX</p></div>
-                    </div>
                     <div class="form-inner form-2-col pt-2 pt-sm-4">
                         <div class="container">
                             <div id="form_B17_mqsc2_rd_carousel" class="carousel slide" data-interval="false">
@@ -281,52 +276,6 @@
                                                                     class="custom-control-description"><span>{% if i == 1 %}{{ ao['label'] }} {% endif %}</span></span></label>
                                                             </div>
                                                         {% endfor %}
-                                                        {#                                                    <div class="custom-control custom-radio pipe-zofar-item-parent"#}
-                                                        {#                                                         style="top: 0; left: 0;"><label class="pipe-zofar-item"#}
-                                                        {#                                                                                         data-label-pos="right"><input#}
-                                                        {#                                                            type="radio" name="form:B17:mqsc2:rd:item1b:rd"#}
-                                                        {#                                                            id="form:B17:mqsc2:rd:item1b:rd:ao2" value="ao2"#}
-                                                        {#                                                            class="custom-control-input"><span#}
-                                                        {#                                                            data-label-type="indicator"#}
-                                                        {#                                                            class="custom-control-indicator"> </span><span#}
-                                                        {#                                                            data-label-type="description"#}
-                                                        {#                                                            class="custom-control-description"><span>TEXT_AO2</span></span></label>#}
-                                                        {#                                                    </div>#}
-                                                        {#                                                    <div class="custom-control custom-radio pipe-zofar-item-parent"#}
-                                                        {#                                                         style="top: 0px; left: 0px;"><label class="pipe-zofar-item"#}
-                                                        {#                                                                                             data-label-pos="right"><input#}
-                                                        {#                                                            type="radio" name="form:B17:mqsc2:rd:item1b:rd"#}
-                                                        {#                                                            id="form:B17:mqsc2:rd:item1b:rd:ao3" value="ao3"#}
-                                                        {#                                                            class="custom-control-input"><span#}
-                                                        {#                                                            data-label-type="indicator"#}
-                                                        {#                                                            class="custom-control-indicator"> </span><span#}
-                                                        {#                                                            data-label-type="description"#}
-                                                        {#                                                            class="custom-control-description"><span>TEXT_AO3</span></span></label>#}
-                                                        {#                                                    </div>#}
-                                                        {#                                                    <div class="custom-control custom-radio pipe-zofar-item-parent"#}
-                                                        {#                                                         style="top: 0px; left: 0px;"><label class="pipe-zofar-item"#}
-                                                        {#                                                                                             data-label-pos="right"><input#}
-                                                        {#                                                            type="radio" name="form:B17:mqsc2:rd:item1b:rd"#}
-                                                        {#                                                            id="form:B17:mqsc2:rd:item1b:rd:ao4" value="ao4"#}
-                                                        {#                                                            onchange="javascript:zofar_singleChoice_triggerRadio('form:B17:mqsc2:rd:item1b:rd','form:B17:mqsc2:rd:item1b:rd:ao4');"#}
-                                                        {#                                                            class="custom-control-input"><span#}
-                                                        {#                                                            data-label-type="indicator"#}
-                                                        {#                                                            class="custom-control-indicator"> </span><span#}
-                                                        {#                                                            data-label-type="description"#}
-                                                        {#                                                            class="custom-control-description"><span>TEXT_AO4</span></span></label>#}
-                                                        {#                                                    </div>#}
-                                                        {#                                                    <div class="custom-control custom-radio pipe-zofar-item-parent"#}
-                                                        {#                                                         style="top: 0px; left: 0px;"><label class="pipe-zofar-item"#}
-                                                        {#                                                                                             data-label-pos="right"><input#}
-                                                        {#                                                            type="radio" name="form:B17:mqsc2:rd:item1b:rd"#}
-                                                        {#                                                            id="form:B17:mqsc2:rd:item1b:rd:ao5" value="ao5"#}
-                                                        {#                                                            onchange="javascript:zofar_singleChoice_triggerRadio('form:B17:mqsc2:rd:item1b:rd','form:B17:mqsc2:rd:item1b:rd:ao5');"#}
-                                                        {#                                                            class="custom-control-input"><span#}
-                                                        {#                                                            data-label-type="indicator"#}
-                                                        {#                                                            class="custom-control-indicator"> </span><span#}
-                                                        {#                                                            data-label-type="description"#}
-                                                        {#                                                            class="custom-control-description"><span>TEXT_AO5</span></span></label>#}
-                                                        {#                                                    </div>#}
                                                     </div>
                                                 </div>
                                             </div>
@@ -339,10 +288,7 @@
                 </div>
             </div>
         </article>
-
-
     {% endif %}
-
 
 </form>
 </body>

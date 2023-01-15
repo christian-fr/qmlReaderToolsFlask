@@ -28,3 +28,7 @@ ul.detailsEntry {
     margin-top: 3rem;
     font-size: small;
 }
+
+.question-text {
+    font-weight: bold;
+}

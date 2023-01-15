@@ -170,7 +170,7 @@ def form_mqsc():
                     'q_uid': 'mqsc',
                     'q_visible': '',
                     'headers': {
-                        1: {'uid': 'q',
+                        1: {'uid': 'q1',
                             'type': 'question',
                             'visible': '',
                             'text': ''}
@@ -243,7 +243,7 @@ def form_mqsc_post():
             data['headers'].update(tmp_dict)
 
         elif action == 'add_item':
-            tmp_dict = {max(data['items'].keys()) + 1: {'uid': f'q{max(data["items"].keys()) + 1}',
+            tmp_dict = {max(data['items'].keys()) + 1: {'uid': f'it{max(data["items"].keys()) + 1}',
                                                         'variable': '',
                                                         'label': '',
                                                         'visible': ''
@@ -251,7 +251,7 @@ def form_mqsc_post():
             data['items'].update(tmp_dict)
 
         elif action == 'add_ao':
-            tmp_dict = {max(data['aos'].keys()) + 1: {'uid': f'q{max(data["aos"].keys()) + 1}',
+            tmp_dict = {max(data['aos'].keys()) + 1: {'uid': f'ao{max(data["aos"].keys()) + 1}',
                                                       'value': '',
                                                       'label': '',
                                                       'visible': ''
