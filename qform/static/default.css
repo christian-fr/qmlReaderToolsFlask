@@ -32,3 +32,14 @@ ul.detailsEntry {
 .question-text {
     font-weight: bold;
 }
+
+.textarea_3rem {
+    /* height: 3rem;*/
+    font-family: Monospaced, monospace;
+    color: midnightblue;
+    resize: none;
+    overflow: hidden;
+    min-height: 3rem;
+    max-height: 16rem;
+}
+

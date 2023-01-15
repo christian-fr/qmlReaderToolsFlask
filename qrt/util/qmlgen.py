@@ -2,6 +2,8 @@ import html
 import pprint
 import re
 from pathlib import Path
+from typing import Dict, Union, List
+
 from lxml.etree import tostring as l_tostring
 
 from qrt.util.questionnaire import HeaderQuestion, HeaderTitle, SCAnswerOption, check_for_unique_uids, \
@@ -23,7 +25,25 @@ def unescape_html(input_str: str) -> str:
     return output_str
 
 
-def gen_mqsc():
+def gen_mqsc(data_dict: Dict[str, Union[List, Dict, str]]) -> str:
+    header_list = []
+    for i, header in data_dict['headers'].items():
+        if header['type'] == 'question':
+            pass
+        elif header['type'] == 'introduction':
+            pass
+        elif header['type'] == 'instruction':
+            pass
+
+    title_header_list = []
+    title_missing_list = []
+    for i, ao in data_dict['aos'].items():
+        if 'missing' in ao:
+            if ao['missing'] == 'on':
+                title_missing_list.append(HeaderTitle(uid=ao['uid'], content=ao['label'], visible=ao['visible']))
+                continue
+        title_header_list.append(HeaderTitle(uid=ao['uid'], content=ao['label'], visible=ao['visible']))
+
     header_list = [
         HeaderQuestion(uid="q",
                        content="""Wie wichtig sind Ihnen die folgenden Rollen Ihrer Betreuungsperson(en)?""")

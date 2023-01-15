@@ -1,7 +1,8 @@
 import os
 import re
 import secrets
-from collections import OrderedDict, defaultdict
+import textwrap
+from collections import defaultdict
 from functools import wraps
 from pathlib import Path
 from typing import Any, Dict, Optional, List, Union, Tuple
@@ -16,7 +17,6 @@ from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from werkzeug.utils import secure_filename, redirect
 from tempfile import TemporaryDirectory
-import time
 import random
 from string import hexdigits
 from qrt.util.qml import read_xml, Questionnaire, VarRef
@@ -27,6 +27,14 @@ app.debug = True
 app.config['upload_dir'] = TemporaryDirectory()
 app.config['SESSION_TYPE'] = 'filesystem'
 app.secret_key = secrets.token_hex(16)
+
+
+@app.context_processor
+def utility_processor():
+    def calc_rows(input_str: str, cols: int) -> int:
+        return max([len(textwrap.wrap(input_str, cols)), 1])
+
+    return dict(calc_rows=calc_rows)
 
 
 def check_credentials(cred: Union[str, None]):
@@ -245,7 +253,7 @@ def form_mqsc_post():
         elif action == 'add_item':
             tmp_dict = {max(data['items'].keys()) + 1: {'uid': f'it{max(data["items"].keys()) + 1}',
                                                         'variable': '',
-                                                        'label': '',
+                                                        'text': '',
                                                         'visible': ''
                                                         }}
             data['items'].update(tmp_dict)
@@ -259,7 +267,7 @@ def form_mqsc_post():
             data['aos'].update(tmp_dict)
 
         elif action == 'gen_xml':
-            data['qml'] = generate_mqsc()
+            data['qml'] = generate_mqsc(data)
             data['html'] = "html"
 
         elif action == 'update':
@@ -297,8 +305,8 @@ def form_mqsc_post():
 
 
 @app.route('/api/gen_mqsc', methods=['POST'])
-def generate_mqsc():
-    return gen_mqsc()
+def generate_mqsc(data_dict):
+    return gen_mqsc(data_dict)
 
 
 def process_xml(file_id) -> None:
@@ -568,7 +576,3 @@ def main():
     finally:
         if 'upload_dir' in app.config:
             app.config['upload_dir'].cleanup()
-
-
-if __name__ == '__main__':
-    main()

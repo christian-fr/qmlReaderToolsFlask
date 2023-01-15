@@ -6,6 +6,7 @@
     <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='master.css') }}">
     <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='additional.css') }}">
     <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='default.css') }}">
+    <script src="{{ url_for('static', filename='default.js') }}"></script>
 
 </head>
 <body>
@@ -55,18 +56,13 @@
                         </label>
                         </p>
                     </td>
-{#                    <td>#}
-{#                        <div class="form-generate">#}
-{#                            <p><label for="header{{ i }}_type">value</label></p>#}
-{#                            <p><input type="text" name="header{{ i }}_value" id="header{{ i }}_type" size="5"#}
-{#                                      value="{{ header['value'] }}"></p>#}
-{#                        </div>#}
-{#                    </td>#}
                     <td colspan="2">
                         <div class="form-generate">
                             <p><label for="header{{ i }}_text">header text</label></p>
-                            <p><input type="text" name="header{{ i }}_text" id="header{{ i }}_text" size="50"
-                                      value="{{ header['text'] }}"></p>
+                            <p><textarea oninput="auto_grow(this)" class="textarea_3rem" type="text"
+                                         name="header{{ i }}_text"
+                                         id="header{{ i }}_text" rows="{{ calc_rows(header['text'], 50) }}"
+                                         cols="50">{{ header['text'] }}</textarea></p>
                         </div>
                     </td>
                 </tr>
@@ -74,8 +70,10 @@
                     <td colspan="4">
                         <div class="form-generate">
                             <p><label for="header{{ i }}_visible">visible</label></p>
-                            <p><input type="text" name="header{{ i }}_visible" id="header{{ i }}_visible" size="75"
-                                      value="{{ header['visible'] }}"></p>
+                            <p><textarea oninput="auto_grow(this)" class="textarea_3rem" type="text"
+                                         name="header{{ i }}_visible"
+                                         id="header{{ i }}_visible" rows="{{ calc_rows(header['visible'], 75) }}"
+                                         cols="75">{{ header['visible'] }}</textarea></p>
                         </div>
                     </td>
                 </tr>
@@ -125,8 +123,10 @@
                     <td>
                         <div class="form-generate">
                             <p><label for="ao{{ i }}_label">label</label></p>
-                            <p><input type="text" name="ao{{ i }}_label" id="ao{{ i }}_label" size="45"
-                                      value="{{ ao['label'] }}"></p>
+                            <p><textarea oninput="auto_grow(this)" class="textarea_3rem" type="text"
+                                         name="ao{{ i }}_label"
+                                         id="ao{{ i }}_label" rows="{{ calc_rows(ao['label'], 50) }}"
+                                         cols="50">{{ ao['label'] }}</textarea></p>
                         </div>
                     </td>
                     <td>
@@ -141,7 +141,10 @@
                     <td colspan="4">
                         <div class="form-generate">
                             <p><label for="ao{{ i }}_visible">visible</label></p>
-                            <p><input type="text" name="ao{{ i }}_visible" id="ao{{ i }}_visible" size="75"></p>
+                            <p><textarea oninput="auto_grow(this)" class="textarea_3rem" type="text"
+                                         name="ao{{ i }}_visible"
+                                         id="ao{{ i }}_visible" rows="{{ calc_rows(ao['visible'], 75) }}"
+                                         cols="75">{{ ao['visible'] }}</textarea></p>
                         </div>
                     </td>
                 </tr>
@@ -169,19 +172,24 @@
                     <td>
                         <div class="form-generate">
                             <p><label for="item{{ i }}_uid">uid</label></p>
-                            <p><input type="text" name="item{{ i }}_uid" id="item{{ i }}_uid" size="4" value="{{ item['uid'] }}"></p>
+                            <p><input type="text" name="item{{ i }}_uid" id="item{{ i }}_uid" size="4"
+                                      value="{{ item['uid'] }}"></p>
                         </div>
                     </td>
                     <td>
                         <div class="form-generate">
                             <p><label for="item{{ i }}_variable">variable</label></p>
-                            <p><input type="text" name="item{{ i }}_variable" id="item{{ i }}_variable" size="5" value="{{ item['variable'] }}"></p>
+                            <p><input type="text" name="item{{ i }}_variable" id="item{{ i }}_variable" size="5"
+                                      value="{{ item['variable'] }}"></p>
                         </div>
                     </td>
                     <td>
                         <div class="form-generate">
                             <p><label for="item{{ i }}_text">label</label></p>
-                            <p><input type="text" name="item{{ i }}_text" id="item{{ i }}_text" size="50" value="{{ item['text'] }}"></p>
+                            <p><textarea oninput="auto_grow(this)" class="textarea_3rem" type="text"
+                                         name="item{{ i }}_text"
+                                         id="item{{ i }}_text" rows="{{ calc_rows(item['text'], 50) }}"
+                                         cols="50">{{ item['text'] }}</textarea></p>
                         </div>
                     </td>
                 </tr>
@@ -189,7 +197,10 @@
                     <td colspan="3">
                         <div class="form-generate">
                             <p><label for="item{{ i }}_visible">visible</label></p>
-                            <p><input type="text" name="item{{ i }}_visible" id="item{{ i }}_visible" size="75" value="{{ item['visible'] }}"></p>
+                            <p><textarea oninput="auto_grow(this)" class="textarea_3rem" type="text"
+                                         name="item{{ i }}_visible"
+                                         id="item{{ i }}_visible" rows="{{ calc_rows(item['visible'], 75) }}"
+                                         cols="75">{{ item['visible'] }}</textarea></p>
                         </div>
                     </td>
                 </tr>
@@ -234,14 +245,14 @@
 
         <article id="form:example:mqsc" class="singlechoicematrix">
             {% for i, header in gen_data['headers'].items() %}
-            <header class="question-main" id="form:example:mqsc:q1_header">
-                <div
-                        {% if header['type'] == 'question' %}class="question-text"{% endif %}
-                        {% if header['type'] == 'instruction' %}class="question-instruction"{% endif %}
-                        {% if header['type'] == 'introduction' %}class="question-intruction"{% endif %}
-                     id="form:example:mqsc:q1"> {{ header['text'] }}
-                </div>
-            </header>
+                <header class="question-main" id="form:example:mqsc:q1_header">
+                    <div
+                            {% if header['type'] == 'question' %}class="question-text"{% endif %}
+                            {% if header['type'] == 'instruction' %}class="question-instruction"{% endif %}
+                            {% if header['type'] == 'introduction' %}class="question-intruction"{% endif %}
+                            id="form:example:mqsc:q1"> {{ header['text'] }}
+                    </div>
+                </header>
             {% endfor %}
             <div id="form:example:mqsc:rd" class="form-orientation form-responsive ">
                 <div class="form-scroller">
@@ -252,7 +263,7 @@
 
                                     {% for i, item in gen_data['items'].items() %}
                                         <div id="form:B17:mqsc2:rd:item1b"
-                                             class="row highlight {% if  (i | int % 2 != 0)  %} highlight-even {% else %} highlight-odd {% endif %} carousel-item item active"
+                                             class="row highlight {% if  (i | int % 2 != 0) %} highlight-even {% else %} highlight-odd {% endif %} carousel-item item active"
                                              data-matrix="item">
                                             <div class="col-md-4 hidden-sm-down"><p class="text-sub"
                                                                                     id="form:B17:mqsc2:rd:item1b:q_header">
@@ -273,7 +284,8 @@
                                                                     data-label-type="indicator"
                                                                     class="custom-control-indicator"> </span><span
                                                                     data-label-type="description"
-                                                                    class="custom-control-description"><span>{% if i == 1 %}{{ ao['label'] }} {% endif %}</span></span></label>
+                                                                    class="custom-control-description"><span>{% if i == 1 %}
+                                                                {{ ao['label'] }} {% endif %}</span></span></label>
                                                             </div>
                                                         {% endfor %}
                                                     </div>
