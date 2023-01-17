@@ -47,6 +47,11 @@
                     {% endfor %}
                 </ul>
             {% endif %}
+            {% if val['data'].__class__.__name__ == 'str' %}
+                <ul class="detailsEntry">
+                    <p>{{ entry }}</p>
+                </ul>
+            {% endif %}
         </section>
     </article>
 {% endfor %}

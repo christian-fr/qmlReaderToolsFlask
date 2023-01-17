@@ -4,7 +4,7 @@ from typing import Any, Dict, Optional, Generator, List, Union, Tuple
 from qrt.util.qml import Questionnaire, ZOFAR_PAGE_TAG, NS
 # from qrt.util.questionnaire import Questionnaire
 from lxml.etree import ElementTree as lEt
-from qrt.util.graph import prepare_digraph, topologically_sorted_nodes, remove_self_loops
+from qrt.util.graph import prepare_digraph, topologically_sorted_nodes, remove_self_loops, find_cycles
 
 
 def flatten(ll: List[Union[List[Any], Tuple[Any]]]) -> Generator[Any, Any, None]:
@@ -33,6 +33,7 @@ def qml_details(q: Questionnaire, filename: Optional[str] = None) -> Dict[str, D
     g = prepare_digraph(q)
     g_cleaned = remove_self_loops(g)
     topo_sorted_pages = topologically_sorted_nodes(g_cleaned)
+    cycles = find_cycles(g_cleaned)
 
     details_dict = OrderedDict()
     if filename is not None:
@@ -48,7 +49,9 @@ def qml_details(q: Questionnaire, filename: Optional[str] = None) -> Dict[str, D
                                             'data': [p.uid for p in q.pages]}
     details_dict['pages_order_topological'] = {'title': 'pages (in topological order)',
                                                'description': 'empty list if topological sorting is not possible due to cycles',
-                                               'data': topo_sorted_pages}
+                                               'data': topo_sorted_pages if topo_sorted_pages != [] else '-> cycles found!'}
+    details_dict['graph_cycles'] = {'title': 'graph cycles / "loops"',
+                                      'data': cycles}
     details_dict['dead_end_pages'] = {'title': 'dead end pages',
                                       'data': q.dead_end_pages()}
     details_dict['page_questions'] = {'title': 'questions per page',
@@ -115,5 +118,3 @@ def to_set_to_sorted_list(in_list: List[str]) -> List[str]:
     in_list = list(set(in_list))
     in_list.sort()
     return in_list
-
-

@@ -28,6 +28,13 @@ def remove_self_loops(g: nx.DiGraph) -> nx.DiGraph:
     return g
 
 
+def find_cycles(g: nx.DiGraph) -> List[str]:
+    try:
+        return [node for node in nx.find_cycle(g)]
+    except nx.exception.NetworkXNoCycle as err:
+        return ['no cycle found']
+
+
 def topologically_sorted_nodes(g: nx.DiGraph) -> List[str]:
     try:
         return [node for node in nx.topological_sort(g)]
