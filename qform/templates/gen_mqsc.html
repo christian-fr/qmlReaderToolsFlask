@@ -7,7 +7,6 @@
     <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='additional.css') }}">
     <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='default.css') }}">
     <script src="{{ url_for('static', filename='default.js') }}"></script>
-    {# <script src="{{ url_for('static', filename='w3syntaxhighlight.js') }}"></script>#}
 
 </head>
 <body>
@@ -23,8 +22,10 @@
 
         <div class="form-generate">
             <p><label for="question_visible">visible</label></p>
-            <p><input type="text" name="question_visible" id="question_visible" size="45"
-                      value="{{ gen_data['q_visible'] }}"></p>
+            <p><textarea oninput="auto_grow(this)" class="textarea_3rem" type="text"
+                         name="question_visible"
+                         id="question_visible" rows="{{ calc_rows(gen_data['q_visible'], 75) }}"
+                         cols="75">{{ gen_data['q_visible'] }}</textarea></p>
         </div>
 
         <hr>
@@ -643,12 +644,12 @@
 
         <article id="form:example:mqsc" class="singlechoicematrix">
             {% for i, header in gen_data['headers'].items() %}
-                <header class="question-main" id="form:example:mqsc:q1_header">
+                <header class="question-main" id="form:example:mqsc:{{ header['uid'] }}_header">
                     <div
                             {% if header['type'] == 'question' %}class="question-text"{% endif %}
                             {% if header['type'] == 'instruction' %}class="question-instruction"{% endif %}
                             {% if header['type'] == 'introduction' %}class="question-intruction"{% endif %}
-                            id="form:example:mqsc:q1"> {{ header['text'] }}
+                            id="form:example:mqsc:{{ header['uid'] }}"> {{ header['text'] }}
                     </div>
                 </header>
             {% endfor %}
@@ -656,34 +657,39 @@
                 <div class="form-scroller">
                     <div class="form-inner form-2-col pt-2 pt-sm-4">
                         <div class="container">
-                            <div id="form_B17_mqsc2_rd_carousel" class="carousel slide" data-interval="false">
+                            <div id="form_example_mqsc_rd_carousel" class="carousel slide" data-interval="false">
                                 <div class="carousel-inner" role="listbox">
 
                                     {% for i, item in gen_data['items'].items() %}
-                                        <div id="form:B17:mqsc2:rd:item1b"
+                                        <div id="form:example:mqsc:rd:{{ item['uid'] }}"
                                              class="row highlight {% if  (i | int % 2 != 0) %} highlight-even {% else %} highlight-odd {% endif %} carousel-item item active"
                                              data-matrix="item">
                                             <div class="col-md-4 hidden-sm-down"><p class="text-sub"
-                                                                                    id="form:B17:mqsc2:rd:item1b:q_header">
+                                                                                    id="form:example:mqsc:rd:{{ item['uid'] }}:q_header">
                                                 {{ item['text'] }}</p></div>
                                             <div class="col-12 col-md-8">
-                                                <div id="form:B17:mqsc2:rd:item1b:rd:rdc"
+                                                <div id="form:example:mqsc:rd:{{ item['uid'] }}:rd:rdc"
                                                      class="custom-form custom-form-radio add-pipe pipe-98">
                                                     <div class="flex-wrapper">
                                                         {% for j, ao in gen_data['aos'].items() %}
 
                                                             <div class="custom-control custom-radio pipe-zofar-item-parent"
-                                                                 style="top: 0; left: 0;"><label class="pipe-zofar-item"
-                                                                                                 data-label-pos="right"><input
-                                                                    type="radio" name="form:B17:mqsc2:rd:item1b:rd"
-                                                                    id="form:B17:mqsc2:rd:item1b:rd:{{ ao['uid'] }}"
-                                                                    value="{{ ao['value'] }}"
-                                                                    class="custom-control-input"><span
-                                                                    data-label-type="indicator"
-                                                                    class="custom-control-indicator"> </span><span
-                                                                    data-label-type="description"
-                                                                    class="custom-control-description"><span>{% if i == 1 %}
-                                                                {{ ao['label'] }} {% endif %}</span></span></label>
+                                                                 style="top: 0; left: 0; display: inline-block">
+                                                                <label class="pipe-zofar-item"
+                                                                       data-label-pos="right">
+                                                                    <input type="radio"
+                                                                           name="form:example:mqsc:rd:{{ item['uid'] }}:rd"
+                                                                           id="form:example:mqsc:rd:{{ item['uid'] }}:rd:{{ ao['uid'] }}"
+                                                                           value="{{ ao['value'] }}"
+                                                                           class="custom-control-input">
+                                                                    <span data-label-type="indicator"
+                                                                          class="custom-control-indicator"> </span>
+                                                                    <span data-label-type="description"
+                                                                          class="custom-control-description">
+                                                                        <span>{% if i == 1 %}<label>[{{ ao['value'] }}]</label>
+                                                                            {{ ao['label'] }} {% endif %}</span>
+                                                                    </span>
+                                                                </label>
                                                             </div>
                                                         {% endfor %}
                                                     </div>
