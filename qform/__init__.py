@@ -2,6 +2,7 @@ import os
 import re
 import secrets
 import textwrap
+import uuid
 from collections import defaultdict
 from functools import wraps
 from pathlib import Path
@@ -37,7 +38,7 @@ def utility_processor():
     return dict(calc_rows=calc_rows)
 
 
-def check_credentials(cred: Union[str, None]):
+def cleanup_credentials(cred: Union[str, None]):
     if cred is not None:
         cred = cred.strip()
         if len(cred) == 0:
@@ -45,21 +46,35 @@ def check_credentials(cred: Union[str, None]):
     return cred
 
 
-flask_user = check_credentials(os.environ.get('FLASK_USER'))
-flask_pass = check_credentials(os.environ.get('FLASK_PASS'))
+flask_user = cleanup_credentials(os.environ.get('FLASK_USER'))
+flask_pass = cleanup_credentials(os.environ.get('FLASK_PASS'))
 
 limiter = Limiter(app=app, key_func=get_remote_address)
 
 ALLOWED_EXTENSIONS = ['xml']
 FILE_DICT = None
 GEN_DICT = None
+SESSION_LIST = None
+
+
+def log_in():
+    session['logged_in'] = True
+    session['uid'] = uuid.uuid4()
+    session_list().append(session['uid'])
+
+
+def log_out():
+    file_ids_list = [k for k, v in file_dict().items() if v['session_uid'] == session.get('uid')]
+    [file_dict().pop(file_id) for file_id in file_ids_list]
+    session_list().remove(session['uid'])
+    session.clear()
 
 
 def login_restricted(func):
     @wraps(func)
     def func_wrapper(*args, **kwargs):
         if flask_user is None or flask_pass is None:
-            session['logged_in'] = True
+            log_in()
         if not session.get('logged_in'):
             return render_template('login.html')
         else:
@@ -80,7 +95,6 @@ def upload_dir():
     p = Path(app.config['upload_dir'].name)
     if not p.exists():
         p.mkdir(parents=True, exist_ok=True)
-
     return p
 
 
@@ -92,6 +106,16 @@ def file_dict():
         FILE_DICT = {}
 
     return FILE_DICT
+
+
+def session_list():
+    global SESSION_LIST
+    # review simple file dict - might be cleared when app is reinitialized
+
+    if SESSION_LIST is None:
+        SESSION_LIST = []
+
+    return SESSION_LIST
 
 
 @app.errorhandler(400)
@@ -131,10 +155,10 @@ def init_session():
 
 
 @app.route('/')
-# @login_restricted
+@login_restricted
 def index():
-    # if not session.get('logged_in'):
-    #     return render_template('login.html')
+    if not session.get('logged_in'):
+        return render_template('login.html')
     return redirect('upload')
 
 
@@ -142,14 +166,21 @@ def index():
 @limiter.limit("100/day")
 @limiter.limit("10/minute")
 def do_login():
-    if flask_user is None or flask_pass is None:
-        session['logged_in'] = True
+    if flask_user is None or flask_pass is None or \
+            (request.form['username'] == flask_user and request.form['password'] == flask_pass):
+        log_in()
         # flash('no users have been set, login is not possible')
         return index()
-    if request.form['username'] == flask_user and request.form['password'] == flask_pass:
-        session['logged_in'] = True
     else:
         flash('wrong password!')
+    return index()
+
+
+@app.route('/logout', methods=['GET'])
+@limiter.limit("100/day")
+@limiter.limit("10/minute")
+def do_logout():
+    log_out()
     return index()
 
 
@@ -163,14 +194,16 @@ def get_flashed_messages():
 
 
 @app.route('/upload', methods=['GET'])
-# @login_restricted
+@login_restricted
 def upload():
-    uploaded_files = [{k: v for k, v in f.items() if k not in ['questionnaire']} for f in file_dict().values()]
+    uploaded_files = [{k: v for k, v in f.items() if k not in ['questionnaire']} for f in file_dict().values() if
+                      f['session_uid'] == session.get('uid')]
     # uploaded_files = list(file_dict().values())
     return render_template('upload.html', uploaded_files=uploaded_files, flowcharts=uploaded_files)
 
 
 @app.route('/gen_mqsc', methods=['GET'])
+@login_restricted
 def form_mqsc():
     gen_data = gen_dict()
     if gen_data == {}:
@@ -226,6 +259,7 @@ def get_action_obj(input_request: Request) -> Optional[Tuple[str, int, str]]:
 
 
 @app.route('/gen_mqsc', methods=['POST'])
+@login_restricted
 def form_mqsc_post():
     data = {'type': request.form['type'],
             'q_uid': request.form['question_uid'],
@@ -306,6 +340,7 @@ def form_mqsc_post():
 
 
 @app.route('/api/gen_mqsc', methods=['POST'])
+@login_restricted
 def generate_mqsc(data_dict):
     return gen_mqsc(data_dict)
 
@@ -335,9 +370,9 @@ def process_graphs(file_id):
 
 
 @app.route('/api/process/<file_id>', methods=['GET'])
-# @login_restricted
+@login_restricted
 def process_file(file_id):
-    if file_id not in file_dict():
+    if file_id not in [k for k, v in file_dict().items() if v['session_uid'] == session.get('uid')]:
         return app.response_class(
             response=json.dumps({'msg': 'file id not registered'}),
             status=400,
@@ -385,39 +420,9 @@ def process_file(file_id):
 
 
 @app.route('/api/details/<file_id>', methods=['GET'])
-# @login_restricted
+@login_restricted
 def file_details(file_id):
-    if file_id not in file_dict():
-        return app.response_class(
-            response=json.dumps({'msg': 'file id not registered'}),
-            status=400,
-            mimetype='application/json'
-        )
-    else:
-        if 'questionnaire' not in file_dict()[file_id]:
-            return app.response_class(
-                response=json.dumps({'msg': 'file has not been processed'}),
-                status=400,
-                mimetype='application/json'
-            )
-        else:
-            q = file_dict()[file_id]['questionnaire']
-    assert isinstance(q, Questionnaire)
-
-    pages_list = list(q.pages)
-    return app.response_class(
-        response=json.dumps({'msg': 'success',
-                             'pages_list': [p.uid for p in file_dict()[file_id]['questionnaire'].pages],
-                             'filename': file_dict()[file_id]['filename']}),
-        status=200,
-        mimetype='application/json'
-    )
-
-
-@app.route('/details/<file_id>', methods=['GET'])
-# @login_restricted
-def details(file_id):
-    if file_id not in file_dict():
+    if file_id not in [k for k, v in file_dict().items() if v['session_uid'] == session.get('uid')]:
         return app.response_class(
             response=json.dumps({'msg': 'file id not registered'}),
             status=400,
@@ -433,18 +438,32 @@ def details(file_id):
                     status=400,
                     mimetype='application/json'
                 )
-    # return app.response_class(
-    #     response=json.dumps({'msg': 'file has not been processed'}),
-    #     status=400,
-    #     mimetype='application/json'
-    # )
-
     q = file_dict()[file_id]['questionnaire']
     assert isinstance(q, Questionnaire)
 
-    # details_data = prepare_dict_for_html(qml_details(q, file_id))
-    details_data = qml_details(q, file_id)
-    return render_template('details.html', details_data=details_data)
+    details_dict = qml_details(file_dict()[file_id]['questionnaire'], file_dict()[file_id]['filename'])
+    assert 'msg' not in details_dict
+    return app.response_class(
+        response=json.dumps({'msg': 'success', **details_dict}),
+        status=200,
+        mimetype='application/json'
+    )
+
+
+@app.route('/details/<file_id>', methods=['GET'])
+@login_restricted
+def details(file_id):
+    api_response = file_details(file_id)
+    if api_response.status_code != 200:
+        return app.response_class(
+            response=json.dumps(api_response.json),
+            status=api_response.status_code,
+            mimetype='application/json'
+        )
+    else:
+        details_data = api_response.json
+        details_data.pop('msg')
+        return render_template('details.html', details_data=details_data)
 
 
 def serialize(obj):
@@ -457,35 +476,8 @@ def serialize(obj):
     return obj.__dict__
 
 
-# def prepare_dict_for_html(input_dict) -> Dict[str, List[str]]:
-#     details_data = OrderedDict()
-#     for k1, v1 in input_dict.items():
-#         if v1:
-#             if isinstance(v1, str):
-#                 pass
-#             elif isinstance(v1, list):
-#                 details_data[k1] = [v1]
-#             elif isinstance(v1, dict):
-#                 tmp_dict = OrderedDict()
-#                 tmp_keys_list = list(input_dict[k1].keys())
-#                 tmp_keys_list.sort()
-#                 details_data[k1] = []
-#                 for k2 in tmp_keys_list:
-#                     v2 = input_dict[k1][k2]
-#                     if isinstance(v2, list):
-#                         v2.sort(key=lambda x: x)
-#                     details_data[k1].append(json.dumps({k2: v2}, default=serialize))
-#                 # details_data[k1] = {str((k2, [str(val) for val in v2] if isinstance(v2, list) else [v2])) for k2, v2 in input_dict[k1].items()}
-#             else:
-#                 raise NotImplementedError()
-#
-#         else:
-#             details_data[k1] = ["--"]
-#     return details_data
-
-
 @app.route('/flowchart/<file_id>', methods=['GET'])
-# @login_restricted
+@login_restricted
 def flowchart(file_id):
     flowchart_i = file_id[file_id.rfind('_') + 1:]
     file_id = file_id[:file_id.rfind('_')]
@@ -509,7 +501,7 @@ def flowchart(file_id):
 
 
 @app.route('/api/upload', methods=['POST'])
-# @login_restricted
+@login_restricted
 def upload_file():
     if 'file' not in request.files:
         return app.response_class(
@@ -529,7 +521,8 @@ def upload_file():
     file_id = randstr(20)
     internal_filename = secure_filename(os.path.join(file_id, os.path.splitext(file.filename)[1]))
     file.save(Path(upload_dir(), internal_filename))
-    file_dict()[file_id] = {'file_id': file_id, 'filename': file.filename, 'internal_filename': internal_filename}
+    file_dict()[file_id] = {'file_id': file_id, 'filename': file.filename, 'internal_filename': internal_filename,
+                            'session_uid': session.get('uid')}
 
     return app.response_class(
         response=json.dumps(file_dict()[file_id]),
@@ -539,7 +532,7 @@ def upload_file():
 
 
 @app.route('/api/remove/<file_id>', methods=['GET'])
-# @login_restricted
+@login_restricted
 def remove_file(file_id):
     if file_id not in file_dict():
         return app.response_class(
@@ -558,7 +551,7 @@ def remove_file(file_id):
 
 
 @app.route('/remove/<file_id>', methods=['GET'])
-# @login_restricted
+@login_restricted
 def remove_file_link(file_id):
     if file_id not in file_dict():
         return app.response_class(

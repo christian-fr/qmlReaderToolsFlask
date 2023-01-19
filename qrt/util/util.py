@@ -51,7 +51,7 @@ def qml_details(q: Questionnaire, filename: Optional[str] = None) -> Dict[str, D
                                                'description': 'empty list if topological sorting is not possible due to cycles',
                                                'data': topo_sorted_pages if topo_sorted_pages != [] else '-> cycles found!'}
     details_dict['graph_cycles'] = {'title': 'graph cycles / "loops"',
-                                      'data': cycles}
+                                    'data': cycles}
     details_dict['dead_end_pages'] = {'title': 'dead end pages',
                                       'data': q.dead_end_pages()}
     details_dict['page_questions'] = {'title': 'questions per page',
