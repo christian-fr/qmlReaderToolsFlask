@@ -72,3 +72,14 @@ ul.detailsEntry {
 .answer-option {
     background: lightgoldenrodyellow;
 }
+
+.aux_var_expl {
+    background-color: #f8e6e0;
+}
+.aux_var_impl {
+    background-color: #fae0e0;
+}
+
+.triggers_json_save {
+    background-color: #9ed0e0;
+}

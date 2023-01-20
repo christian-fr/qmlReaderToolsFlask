@@ -77,7 +77,7 @@ def digraph(q: Questionnaire,
         # add page variables from body to dict
         [[vars_d[p.uid].add(var.variable.name) for var in p.body_vars] for p in q.pages]
         # add page variables from triggers to dict
-        [[vars_d[p.uid].add(var) for var in p.triggers_vars] for p in q.pages]
+        [[vars_d[p.uid].add(var) for var in p.triggers_vars_explicit] for p in q.pages]
         vars_d = {k: list(v) for k, v in vars_d.items()}
         replacement_dict = {
             uid: f'{uid}\n' + ',\n'.join(

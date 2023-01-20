@@ -38,20 +38,44 @@
                         </tr>
                     {% endfor %}
                 </table>
-            {% endif %}
 
-            {% if val['data'].__class__.__name__ == 'list' %}
-                <ul class="detailsEntry">
-                    {% for entry in val['data'] %}
+            {% elif 'table' in val %}
+                {% if val['table'] == True %}
+                    <table>
+                        <thead>
+                        <tr>
+                            {% for header in  val['data'][0] %}
+                                <th>
+                                    {{ header }}
+                                </th>
+                            {% endfor %}
+                        </tr>
+                        </thead>
+
+                        {% for row in val['data'][1:] %}
+                            <tr>
+                                {% for header in  val['data'][0] %}
+                                    <td class="{{ header }}">
+                                        {{ row[header]|string }}
+                                    </td>
+                                {% endfor %}
+                            </tr>
+                        {% endfor %}
+                    </table>
+
+                {% else %}
+                    <ul class="detailsEntry">
+                        {% for entry in val['data'] %}
                             <li> {{ entry }}</li>
-                    {% endfor %}
-                </ul>
-            {% endif %}
-            {% if val['data'].__class__.__name__ == 'str' %}
+                        {% endfor %}
+                    </ul>
+                {% endif %}
+            {% elif val['data'].__class__.__name__ == 'str' %}
                 <ul class="detailsEntry">
                     <p>{{ entry }}</p>
                 </ul>
             {% endif %}
+
         </section>
     </article>
 {% endfor %}

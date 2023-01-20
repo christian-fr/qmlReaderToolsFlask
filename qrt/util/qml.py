@@ -72,7 +72,6 @@ RE_TO_PERSIST = re.compile(r"^\s*toPersist\.put\('([0-9a-zA-Z_]+)',[a-zA-Z0-9_.]
 RE_REDIRECT_TRIG = re.compile(r"^\s*navigatorBean\.redirect\('([a-zA-Z0-9_]+)'\)\s*$")
 RE_REDIRECT_TRIG_AUX = re.compile(r"^\s*navigatorBean\.redirect\(([a-zA-Z0-9_]+)\)\s*$")
 
-
 ZOFAR_NS_URI_E = "http://www.his.de/zofar/xml/questionnaire"
 NS_E = {"zofar": ZOFAR_NS_URI}
 E = ElementMaker(namespace=ZOFAR_NS_URI_E, nsmap=NS_E)
@@ -97,7 +96,6 @@ TEXT = E.text
 INS = E.instruction
 INT = E.introduction
 QUE = E.question
-
 
 
 def flatten(ll):
@@ -138,14 +136,16 @@ class Transition:
     # condition as spring expression that has to be fulfilled on order to follow the transition
 
 
-# forward declaration of class TriggerVariable
-TriggerVariable = NewType('TriggerVariable', None)
+@dataclass(kw_only=True)
+class ScriptItem:
+    value: str
 
 
+# noinspection PyDataclass
 @dataclass(kw_only=True)
 class Trigger:
     condition: Optional[str] = 'true'
-    children: Optional[TriggerVariable] = None
+    children: List[ScriptItem] = field(default_factory=list)
     on_exit: Optional[str] = ON_EXIT_DEFAULT
     direction: Optional[str] = DIRECTION_DEFAULT
 
@@ -271,11 +271,14 @@ def action_trigger(trigger: ElementTree.Element) -> TriggerAction:
         direction = trigger.attrib['direction']
     if 'condition' in trigger.attrib:
         condition = trigger.attrib['condition']
+    children = [ScriptItem(value=child.attrib['value']) for child in trigger.getchildren() if
+                child.tag == ZOFAR_SCRIPT_ITEM_TAG and 'value' in child.attrib]
     if 'command' in trigger.attrib:
         return TriggerAction(command=trigger.attrib['command'],
                              on_exit=on_exit,
                              direction=direction,
-                             condition=condition)
+                             condition=condition,
+                             children=children)
     # print(ElementTree.tostring(trigger))
     raise KeyError('Key "command" not found for variable trigger.')
 
@@ -285,7 +288,10 @@ def variable_trigger(trigger: ElementTree.Element) -> TriggerVariable:
         condition = CONDITION_DEFAULT
         if 'condition' in trigger.attrib:
             condition = trigger.attrib['condition']
-        return TriggerVariable(variable=trigger.attrib['variable'], value=trigger.attrib['value'], condition=condition)
+        children = [ScriptItem(value=child.attrib['value']) for child in trigger.getchildren() if
+                    child.tag == ZOFAR_SCRIPT_ITEM_TAG and 'value' in child.attrib]
+        return TriggerVariable(variable=trigger.attrib['variable'], value=trigger.attrib['value'], condition=condition,
+                               children=children)
     # print(ElementTree.tostring(trigger))
     raise KeyError('Keys "variable" and/or "value" not found for variable trigger.')
 
@@ -322,24 +328,24 @@ def process_triggers(page: ElementTree.Element) -> List[Union[TriggerVariable, T
     return []
 
 
-def trig_json_vars_reset(page: ElementTree.Element) -> List[str]:
+def triggers_json_vars_reset(page: ElementTree.Element) -> List[str]:
     return flatten([RE_TO_RESET.findall(si.attrib['value']) for si in
-                    trig_action_script_items(page=page, direction=None, on_exit='false')])
+                    triggers_action_script_items(page=page, direction=None, on_exit='false')])
 
 
-def trig_json_vars_load(page: ElementTree.Element) -> List[str]:
+def triggers_json_vars_load(page: ElementTree.Element) -> List[str]:
     return flatten([RE_TO_LOAD.findall(si.attrib['value']) for si in
-                    trig_action_script_items(page=page, direction=None, on_exit='false')])
+                    triggers_action_script_items(page=page, direction=None, on_exit='false')])
 
 
-def trig_json_vars_save(page: ElementTree.Element) -> List[str]:
+def triggers_json_vars_save(page: ElementTree.Element) -> List[str]:
     return flatten([RE_TO_PERSIST.findall(si.attrib['value']) for si in
-                    trig_action_script_items(page=page, direction=None, on_exit='true')])
+                    triggers_action_script_items(page=page, direction=None, on_exit='true')])
 
 
-def trig_action_script_items(page: ElementTree.Element,
-                             direction: Optional[str],
-                             on_exit: Optional[str]) -> List[ElementTree.Element]:
+def triggers_action_script_items(page: ElementTree.Element,
+                                 direction: Optional[str],
+                                 on_exit: Optional[str]) -> List[ElementTree.Element]:
     act_trig = [elmnt for elmnt in page.findall('./zofar:triggers/zofar:action/zofar:scriptItem', NS)]
     return_list = []
     for element in act_trig:
@@ -571,7 +577,8 @@ class Page:
     transitions: List[Transition] = field(default_factory=list)
     var_ref: List[str] = field(default_factory=list)
     _triggers_list: List[Trigger] = field(default_factory=list)
-    triggers_vars: List[str] = field(default_factory=list)
+    triggers_vars_explicit: List[str] = field(default_factory=list)
+    triggers_vars_implicit: List[str] = field(default_factory=list)
     triggers_json_save: List[str] = field(default_factory=list)
     triggers_json_load: List[str] = field(default_factory=list)
     triggers_json_reset: List[str] = field(default_factory=list)
@@ -584,6 +591,9 @@ class Page:
     @property
     def triggers_list(self):
         return self._triggers_list
+
+    def __str__(self):
+        return self.uid
 
 
 @dataclass
@@ -722,10 +732,14 @@ def read_xml(xml_path: Path) -> Questionnaire:
         p.body_vars = vars_used(l_page)
         p.body_questions = body_questions_vars(l_page)
 
-        p.triggers_vars = [trig.variable for trig in p.triggers_list if isinstance(trig, TriggerVariable)]
-        p.trig_json_save = trig_json_vars_save(l_page)
-        p.trig_json_load = trig_json_vars_load(l_page)
-        p.trig_json_reset = trig_json_vars_reset(l_page)
+        p.triggers_vars_explicit = list({trig.variable for trig in p.triggers_list if isinstance(trig, TriggerVariable)})
+        p.triggers_vars_implicit = list({ch.value[len("zofar.setVariableValue('") - 1:ch.value.find(",")] for ch in
+                                         flatten([trig.children for trig in p.triggers_list if
+                                                  isinstance(trig, TriggerAction)]) if
+                                         ch.value.startswith("zofar.setVariableValue(")})
+        p.triggers_json_save = triggers_json_vars_save(l_page)
+        p.triggers_json_load = triggers_json_vars_load(l_page)
+        p.triggers_json_reset = triggers_json_vars_reset(l_page)
         p.visible_conditions = visible_conditions(l_page)
 
         p.trig_redirect_on_exit_true = redirect_triggers(p.triggers_list, 'true')
@@ -741,7 +755,7 @@ def read_xml(xml_path: Path) -> Questionnaire:
     #     p.var_ref = var_refs(page)
     #     p._triggers_list = process_triggers(page)
     #
-    #     p.triggers_vars = [trig.variable for trig in p.triggers_list if isinstance(trig, TriggerVariable)]
+    #     p.triggers_vars_explicit = [trig.variable for trig in p.triggers_list if isinstance(trig, TriggerVariable)]
     #     p.trig_json_save = trig_json_vars_save(page)
     #     p.trig_json_load = trig_json_vars_load(page)
     #     p.trig_json_reset = trig_json_vars_reset(page)
@@ -767,4 +781,3 @@ if __name__ == '__main__':
     main(**ns.__dict__)
 
     pass
-

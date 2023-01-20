@@ -15,6 +15,14 @@ def generate_var_declarations(var_data: Dict[str, str]):
     return [f'\t\t<zofar:variable name="{varname}" type="{vartype}"/>' for varname, vartype in var_data.items()]
 
 
+def find_json_episode_data(q: Questionnaire) -> Dict[str, Dict[str, List[str]]]:
+    return {'triggers_json_reset': {p.uid: p.triggers_json_reset for p in q.pages},
+            'triggers_json_load': {p.uid: p.triggers_json_load for p in q.pages},
+            'triggers_json_save': {p.uid: p.triggers_json_save for p in q.pages},
+            'aux_var_expl':  {p.uid: [var for var in p.triggers_vars_explicit] for p in q.pages},
+            'aux_var_impl':  {p.uid: [var for var in p.triggers_vars_implicit] for p in q.pages}}
+
+
 def qml_details(q: Questionnaire, filename: Optional[str] = None) -> Dict[str, Dict[str, Union[str, list, dict]]]:
     warnings_list = []
     vars_dict = OrderedDict()
@@ -35,6 +43,19 @@ def qml_details(q: Questionnaire, filename: Optional[str] = None) -> Dict[str, D
     topo_sorted_pages = topologically_sorted_nodes(g_cleaned)
     cycles = find_cycles(g_cleaned)
 
+    json_data_dict = find_json_episode_data(q)
+    headers = ('page', *sorted(json_data_dict.keys()))
+    json_episode_data_table = [['page', *sorted(json_data_dict.keys())]]
+    for p in q.pages:
+        tmp_list = [p.uid]
+        for key in [*sorted(json_data_dict.keys())]:
+            if p.uid in json_data_dict[key]:
+                tmp_list.append(json_data_dict[key][p.uid])
+            else:
+                tmp_list.append(None)
+        assert len(headers) == len(tmp_list)
+        json_episode_data_table.append({k: v for k, v in zip(headers, tmp_list)})
+
     details_dict = OrderedDict()
     if filename is not None:
         details_dict['filename'] = {'title': 'filename',
@@ -52,6 +73,16 @@ def qml_details(q: Questionnaire, filename: Optional[str] = None) -> Dict[str, D
                                                'data': topo_sorted_pages if topo_sorted_pages != [] else '-> cycles found!'}
     details_dict['graph_cycles'] = {'title': 'graph cycles / "loops"',
                                     'data': cycles}
+    details_dict['triggers_json_reset'] = {'title': 'JSON reset triggers',
+                                           'data': find_json_episode_data(q)['triggers_json_reset']}
+    details_dict['triggers_json_load'] = {'title': 'JSON load triggers',
+                                          'data': find_json_episode_data(q)['triggers_json_load']}
+    details_dict['triggers_json_save'] = {'title': 'JSON save trigger',
+                                          'data': find_json_episode_data(q)['triggers_json_save']}
+    details_dict['triggers_json_table'] = {'title': 'JSON episode table',
+                                           'comment': '',
+                                           'data': json_episode_data_table,
+                                           'table': True}
     details_dict['dead_end_pages'] = {'title': 'dead end pages',
                                       'data': q.dead_end_pages()}
     details_dict['page_questions'] = {'title': 'questions per page',

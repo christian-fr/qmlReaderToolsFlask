@@ -280,7 +280,7 @@ def get_action_obj(input_request: Request) -> Optional[Tuple[str, int, str]]:
                     obj_type = 'item'
                 else:
                     search_index = target.find('attop')
-                    obj_type = 'attop' + target[search_index+len('attop'):]
+                    obj_type = 'attop' + target[search_index + len('attop'):]
             elif target.startswith('add_attached_open'):
                 obj_type = 'add_attached_open'
             else:
