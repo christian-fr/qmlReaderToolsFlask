@@ -57,3 +57,18 @@ ul.detailsEntry {
     transform: translate(0,-2.5rem);
     color: red;
 }
+
+.item {
+    background: #83bbd2;
+}
+.attached-open {
+    background: lightblue;
+}
+
+.header {
+    background: lightcoral;
+}
+
+.answer-option {
+    background: lightgoldenrodyellow;
+}

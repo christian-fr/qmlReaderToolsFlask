@@ -33,7 +33,7 @@
         <h2> question header</h2>
         <table>
             {% for i, header in gen_data['headers'].items() %}
-                <tr>
+                <tr class="header">
                     <td>
                         <div class="form-generate">
                             <p><label for="header{{ i }}_uid">uid</label></p>
@@ -68,7 +68,7 @@
                         </div>
                     </td>
                 </tr>
-                <tr>
+                <tr class="header">
                     <td colspan="4">
                         <div class="form-generate">
                             <p><label for="header{{ i }}_visible">visible</label></p>
@@ -107,7 +107,7 @@
         <h2> answer options</h2>
         <table>
             {% for i, ao in gen_data['aos'].items() %}
-                <tr>
+                <tr class="answer-option">
                     <td>
                         <div class="form-generate">
                             <p><label for="ao{{ i }}_uid">uid</label></p>
@@ -139,7 +139,7 @@
                         </div>
                     </td>
                 </tr>
-                <tr>
+                <tr class="answer-option">
                     <td colspan="4">
                         <div class="form-generate">
                             <p><label for="ao{{ i }}_visible">visible</label></p>
@@ -170,7 +170,7 @@
         <h2> items </h2>
         <table>
             {% for i, item in gen_data['items'].items() %}
-                <tr>
+                <tr class="item">
                     <td>
                         <div class="form-generate">
                             <p><label for="item{{ i }}_uid">uid</label></p>
@@ -195,7 +195,7 @@
                         </div>
                     </td>
                 </tr>
-                <tr>
+                <tr class="item">
                     <td colspan="3">
                         <div class="form-generate">
                             <p><label for="item{{ i }}_visible">visible</label></p>
@@ -206,17 +206,81 @@
                         </div>
                     </td>
                 </tr>
-            {% endfor %}
-            <tr>
-                <td colspan="3">
-                    <button class="favorite styled" type="submit" value="update" name="submit">update
-                    </button>
+                <tr class="item">
+                    <td colspan="3">
+                        <button class="favorite styled" type="submit" value="update" name="submit">update</button>
+                        <button class="favorite styled" type="submit" value="item{{ i }}" name="up">up</button>
+                        <button class="favorite styled" type="submit" value="item{{ i }}" name="remove">remove</button>
+                        <button class="favorite styled" type="submit" value="item{{ i }}" name="down">down</button>
+                    </td>
+                </tr>
 
-                    <button class="favorite styled" type="submit" value="item1" name="up">up</button>
-                    <button class="favorite styled" type="submit" value="item1" name="remove">remove</button>
-                    <button class="favorite styled" type="submit" value="item1" name="down">down</button>
-                </td>
-            </tr>
+                {% if 'attached_opens' in item.keys() %}
+                    {% for j, attop in item['attached_opens'].items() %}
+                        <tr class="attached-open">
+                            <td>
+                                <div class="form-generate">
+                                    <p><label for="item{{ i }}_attop{{ j }}_uid">uid</label></p>
+                                    <p><input type="text" name="item{{ i }}_attop{{ j }}_uid"
+                                              id="item{{ i }}_attop{{ j }}_uid" size="4"
+                                              value="{{ attop['uid'] }}"></p>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="form-generate">
+                                    <p><label for="item{{ i }}_attop{{ j }}_variable">variable</label></p>
+                                    <p><input type="text" name="item{{ i }}_attop{{ j }}_variable"
+                                              id="item{{ i }}_attop{{ j }}_variable" size="5"
+                                              value="{{ attop['variable'] }}"></p>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="form-generate">
+                                    <p><label for="item{{ i }}_attop{{ j }}_prefix">prefix</label></p>
+                                    <p><textarea oninput="auto_grow(this)" class="textarea_3rem" type="text"
+                                                 name="item{{ i }}_attop{{ j }}_prefix"
+                                                 id="item{{ i }}_attop{{ j }}_prefix"
+                                                 rows="{{ calc_rows(attop['prefix'], 25) }}"
+                                                 cols="25">{{ attop['prefix'] }}</textarea></p>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="form-generate">
+                                    <p><label for="item{{ i }}_attop{{ j }}_postfix">postfix</label></p>
+                                    <p><textarea oninput="auto_grow(this)" class="textarea_3rem" type="text"
+                                                 name="item{{ i }}_attop{{ j }}_postfix"
+                                                 id="item{{ i }}_attop{{ j }}_postfix"
+                                                 rows="{{ calc_rows(attop['postfix'], 25) }}"
+                                                 cols="25">{{ attop['postfix'] }}</textarea></p>
+                                </div>
+                            </td>
+
+                        </tr>
+                        <tr>
+                            <td>
+                                <button class="favorite styled" type="submit" value="update" name="submit">update
+                                </button>
+                                <button class="favorite styled" type="submit" value="item{{ i }}_attop{{ j }}"
+                                        name="up">up
+                                </button>
+                                <button class="favorite styled" type="submit" value="item{{ i }}_attop{{ j }}"
+                                        name="remove">remove
+                                </button>
+                                <button class="favorite styled" type="submit" value="item{{ i }}_attop{{ j }}"
+                                        name="down">down
+                                </button>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                {% endif %}
+                <tr>
+                    <td colspan="3">
+                        <button class="favorite styled" type="submit" value="item{{ i }}" name="add_attached_open">add
+                            attached open
+                        </button>
+                    </td>
+                </tr>
+            {% endfor %}
         </table>
 
         <button class="favorite styled" type="submit" value="add_item" name="submit">add item</button>
@@ -686,7 +750,8 @@
                                                                           class="custom-control-indicator"> </span>
                                                                     <span data-label-type="description"
                                                                           class="custom-control-description">
-                                                                        <span>{% if i == 1 %}<label>[{{ ao['value'] }}]</label>
+                                                                        <span>{% if i == 1 %}
+                                                                            <label>[{{ ao['value'] }}]</label>
                                                                             {{ ao['label'] }} {% endif %}</span>
                                                                     </span>
                                                                 </label>

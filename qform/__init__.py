@@ -226,7 +226,8 @@ def form_mqsc():
                         1: {'uid': 'it1',
                             'variable': '',
                             'text': '',
-                            'visible': ''}
+                            'visible': '',
+                            'attached_opens': {}}
                     }
                     }
     return render_template('gen_mqsc.html', gen_data=gen_data)
@@ -237,22 +238,53 @@ def nested_dict(input_dict: Dict[str, str], prefix: str) -> Dict[int, Dict[str, 
     for k, v in input_dict.items():
         if not k.startswith(prefix):
             continue
-        result[int(k.split('_')[0].strip(prefix))][k.split('_')[1]] = v
+        try:
+            result[int(k.split('_')[0].strip(prefix))][k.split('_')[1]] = v
+        except ValueError as err:
+            print()
+    if prefix == 'item':
+        print()
+        tmp_dict = {}
+        for k, v in input_dict.items():
+            if not k.startswith('item'):
+                continue
+            elif k.find('attop') == -1:
+                continue
+            else:
+                it_index = int(k[len('item'):].split('_')[0])
+                tmp_str = k[len(f'item{it_index}'):]
+                attop_index = int(tmp_str.lstrip('_').split('_')[0].replace('attop', ''))
+                attop_key = tmp_str.lstrip('_').split('_')[1]
+                if 'attached_opens' not in result[it_index]:
+                    result[it_index]['attached_opens'] = {}
+                if attop_index not in result[it_index]['attached_opens']:
+                    result[it_index]['attached_opens'][attop_index] = {}
+                result[it_index]['attached_opens'][attop_index][attop_key] = v
+
+        # {k.strip('item').split('_')[0]: {k.strip('item').split('_')[1:]: v} for k, v in input_dict.items() if k.startswith('item')}
+
     return result
 
 
 def get_action_obj(input_request: Request) -> Optional[Tuple[str, int, str]]:
-    for action in ['down', 'up', 'remove']:
+    for action in ['down', 'up', 'remove', 'add_attached_open']:
         if action in request.form:
-            target = request.form[action]
             obj_type = None
+            target = request.form[action]
             if target.startswith('header'):
                 obj_type = 'header'
             elif target.startswith('ao'):
                 obj_type = 'ao'
             elif target.startswith('item'):
-                obj_type = 'item'
-
+                if target.find('attop') == -1:
+                    obj_type = 'item'
+                else:
+                    search_index = target.find('attop')
+                    obj_type = 'attop' + target[search_index+len('attop'):]
+            elif target.startswith('add_attached_open'):
+                obj_type = 'add_attached_open'
+            else:
+                return None
             obj_index = int(target.replace(obj_type, ''))
             return action, obj_index, obj_type
     return None
@@ -288,7 +320,8 @@ def form_mqsc_post():
             tmp_dict = {max(data['items'].keys()) + 1: {'uid': f'it{max(data["items"].keys()) + 1}',
                                                         'variable': '',
                                                         'text': '',
-                                                        'visible': ''
+                                                        'visible': '',
+                                                        'attached_opens': {}
                                                         }}
             data['items'].update(tmp_dict)
 
@@ -310,10 +343,23 @@ def form_mqsc_post():
     action_data = get_action_obj(request)
     if action_data is not None:
         obj_action, obj_index, obj_type = action_data
-        if obj_action == 'remove':
+        if obj_action == 'add_attached_open':
+            if obj_index in data['items']:
+                if 'attached_opens' not in data['items'][obj_index]:
+                    data['items'][obj_index]['attached_opens'] = {}
+                    new_index = 1
+                elif len(
+                        data['items'][obj_index]['attached_opens']) == 0:
+                    new_index = 1
+                else:
+                    new_index = max(data['items'][obj_index]['attached_opens'].keys()) + 1
+                data['items'][obj_index]['attached_opens'][new_index] = {
+                    'uid': f'att{new_index}', 'prefix': '', 'postfix': '',
+                    'visible': ''}
+        elif obj_action == 'remove':
             if obj_index in data[obj_type + 's']:
                 data[obj_type + 's'].pop(obj_index)
-        if obj_index in data[obj_type + 's']:
+        elif obj_action in ['up', 'down'] and obj_index in data[obj_type + 's']:
             if obj_action == 'up':
                 tmp_dict = {obj_index - 1: data[obj_type + 's'][obj_index],
                             obj_index: data[obj_type + 's'][obj_index - 1]}
@@ -327,15 +373,16 @@ def form_mqsc_post():
                 data[obj_type + 's'].pop(obj_index + 1)
                 data[obj_type + 's'].pop(obj_index)
                 data[obj_type + 's'].update(tmp_dict)
-        new_dict = {}
-        for k in sorted(data[obj_type + 's']):
-            new_index = len(new_dict) + 1
-            new_dict[new_index] = data[obj_type + 's'][k]
-            # ToDo: comment and fix line below
-            new_dict[new_index]['uid'] = re.sub(r'[0-9]+', '', data[obj_type + 's'][k]['uid']) + str(new_index)
-        data[obj_type + 's'] = new_dict
+            new_dict = {}
+            for k in sorted(data[obj_type + 's']):
+                new_index = len(new_dict) + 1
+                new_dict[new_index] = data[obj_type + 's'][k]
+                # ToDo: comment and fix line below
+                new_dict[new_index]['uid'] = re.sub(r'[0-9]+', '', data[obj_type + 's'][k]['uid']) + str(new_index)
+            data[obj_type + 's'] = new_dict
     gen_dict().clear()
     gen_dict().update(data)
+
     return render_template('gen_mqsc.html', gen_data=gen_dict())
 
 
