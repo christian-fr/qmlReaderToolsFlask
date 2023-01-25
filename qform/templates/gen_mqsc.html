@@ -702,6 +702,16 @@
         </script>
     {% endif %}
 
+    {% if json_data|length > 0 %}
+        <h2>JSON data</h2>
+        <pre>{{ json_data }}</pre>
+    {% endif %}
+
+    {% if toml_data|length > 0 %}
+        <h2>TOML data</h2>
+        <pre>{{ toml_data }}</pre>
+    {% endif %}
+
     {% if 'html' in gen_data.keys() %}
         <hr>
         <h2>rendered HTML preview</h2>

@@ -7,6 +7,7 @@ from collections import defaultdict
 from functools import wraps
 from pathlib import Path
 from typing import Any, Dict, Optional, List, Union, Tuple
+import tomli_w
 
 import pkg_resources
 
@@ -230,7 +231,14 @@ def form_mqsc():
                             'attached_opens': {}}
                     }
                     }
-    return render_template('gen_mqsc.html', gen_data=gen_data)
+
+    def _int_to_str_keys(input_obj: Union[dict, list, str, bool]):
+        if not isinstance(input_obj, dict):
+            return input_obj
+        else:
+            return {str(k): _int_to_str_keys(v) for k, v in input_obj.items()}
+
+    return render_template('gen_mqsc.html', gen_data=gen_data, json_data=json.dumps(gen_data, indent=2), toml_data=tomli_w.dumps(_int_to_str_keys(gen_data)))
 
 
 def nested_dict(input_dict: Dict[str, str], prefix: str) -> Dict[int, Dict[str, str]]:
@@ -259,7 +267,7 @@ def nested_dict(input_dict: Dict[str, str], prefix: str) -> Dict[int, Dict[str, 
                     result[it_index]['attached_opens'] = {}
                 if attop_index not in result[it_index]['attached_opens']:
                     result[it_index]['attached_opens'][attop_index] = {}
-                result[it_index]['attached_opens'][attop_index][attop_key] = v
+                    result[it_index]['attached_opens'][attop_index][attop_key] = v
 
         # {k.strip('item').split('_')[0]: {k.strip('item').split('_')[1:]: v} for k, v in input_dict.items() if k.startswith('item')}
 
