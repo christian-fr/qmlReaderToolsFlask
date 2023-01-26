@@ -603,6 +603,9 @@ class Questionnaire:
     warnings: List[str] = field(default_factory=list)
     xml_root: lEt = field(default_factory=lEt)
 
+    def __str__(self):
+        return str([p.uid for p in self.pages[:10]] + ['...'])
+
     def body_vars_per_page_dict(self):
         return {p.uid: p.body_vars for p in self.pages}
 
@@ -732,7 +735,11 @@ def read_xml(xml_path: Path) -> Questionnaire:
         p.body_vars = vars_used(l_page)
         p.body_questions = body_questions_vars(l_page)
 
-        p.triggers_vars_explicit = list({trig.variable for trig in p.triggers_list if isinstance(trig, TriggerVariable)})
+        p.triggers_vars_explicit = list(
+            {trig.variable for trig in p.triggers_list if isinstance(trig, TriggerVariable)})
+        p.triggers_vars_explicit += list(
+            set(flatten([[trig.variable, trig.x_var, trig.y_var] for trig in p.triggers_list if
+                         isinstance(trig, TriggerJsCheck)])))
         p.triggers_vars_implicit = list({ch.value[len("zofar.setVariableValue('") - 1:ch.value.find(",")] for ch in
                                          flatten([trig.children for trig in p.triggers_list if
                                                   isinstance(trig, TriggerAction)]) if

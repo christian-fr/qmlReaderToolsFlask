@@ -11,16 +11,19 @@ def flatten(ll: List[Union[List[Any], Tuple[Any]]]) -> Generator[Any, Any, None]
     return (i for g in ll for i in g)
 
 
-def generate_var_declarations(var_data: Dict[str, str]):
-    return [f'\t\t<zofar:variable name="{varname}" type="{vartype}"/>' for varname, vartype in var_data.items()]
+def generate_var_declarations(var_data: Dict[str, str], name_sorted: bool = False) -> List[str]:
+    if not name_sorted:
+        return [f'<zofar:variable name="{varname}" type="{vartype}"/>' for varname, vartype in var_data.items()]
+    else:
+        return [f'<zofar:variable name="{varname}" type="{vartype}"/>' for varname, vartype in sorted(var_data.items())]
 
 
 def find_json_episode_data(q: Questionnaire) -> Dict[str, Dict[str, List[str]]]:
     return {'triggers_json_reset': {p.uid: p.triggers_json_reset for p in q.pages},
             'triggers_json_load': {p.uid: p.triggers_json_load for p in q.pages},
             'triggers_json_save': {p.uid: p.triggers_json_save for p in q.pages},
-            'aux_var_expl':  {p.uid: [var for var in p.triggers_vars_explicit] for p in q.pages},
-            'aux_var_impl':  {p.uid: [var for var in p.triggers_vars_implicit] for p in q.pages}}
+            'aux_var_expl': {p.uid: [var for var in p.triggers_vars_explicit] for p in q.pages},
+            'aux_var_impl': {p.uid: [var for var in p.triggers_vars_implicit] for p in q.pages}}
 
 
 def qml_details(q: Questionnaire, filename: Optional[str] = None) -> Dict[str, Dict[str, Union[str, list, dict]]]:
@@ -55,6 +58,10 @@ def qml_details(q: Questionnaire, filename: Optional[str] = None) -> Dict[str, D
                 tmp_list.append(None)
         assert len(headers) == len(tmp_list)
         json_episode_data_table.append({k: v for k, v in zip(headers, tmp_list)})
+
+    variable_declarations_per_page = '\t<zofar:variables>\n'
+    variable_declarations_per_page += '\t\t' + '\n\t\t'.join(commented_var_declarations(q))
+    variable_declarations_per_page += '\n\t</zofar:variables>\n'
 
     details_dict = OrderedDict()
     if filename is not None:
@@ -97,16 +104,68 @@ def qml_details(q: Questionnaire, filename: Optional[str] = None) -> Dict[str, D
                                                 'data': q.vars_used_not_declared()}
     # variable declarations
     details_dict['used_but_undeclared_variables_declarations'] = {'title': 'declarations for missing variables',
-                                                                  'data': sorted(generate_var_declarations(
-                                                                      q.vars_used_not_declared()))}
+                                                                  'data': '\n\t\t\t'.join(
+                                                                      sorted(generate_var_declarations(
+                                                                          q.vars_used_not_declared())))}
     details_dict['used_zofar_functions'] = {'title': 'zofar functions used',
                                             'description': 'no description yet',
                                             'data': all_zofar_functions(q)}
     details_dict['all_variables_per_type'] = {'title': 'variables per type',
                                               'description': 'variables sorted by type',
                                               'data': all_vars_per_type(q)}
-
+    details_dict['all_var_declarations_commented_pages'] = {'title': 'all var declarations sorted per page',
+                                                            'description': '',
+                                                            'data': variable_declarations_per_page,
+                                                            'raw': True}
     return details_dict
+
+
+def commented_var_declarations(q) -> List[str]:
+    output_list_per_page = []
+    processed_var_names = set()
+    unknown_var_types = []
+    for p in q.pages:
+        # page body variables
+        if p.uid.find('-->') != -1:
+            continue
+        output_list_per_page.append('\n')
+        output_list_per_page.append(f'<!-- {p.uid} -->')
+        vars_dict = {var.variable.name: var.variable.type for var in p.body_vars if
+                     var.variable.name not in processed_var_names}
+
+        [output_list_per_page.append(decl) for decl in generate_var_declarations(vars_dict, name_sorted=True)]
+        [processed_var_names.add(var_name) for var_name in vars_dict.keys()]
+
+        vars_dict = {}
+        for var_name in p.triggers_vars_explicit + p.triggers_vars_implicit:
+            if var_name in q.all_page_body_vars():
+                continue
+            else:
+                if var_name in processed_var_names:
+                    continue
+                else:
+                    if var_name in q.var_declarations:
+                        vars_dict.update({var_name: q.var_declarations[var_name].type})
+                    else:
+                        unknown_var_types.append(var_name)
+        if vars_dict:
+            output_list_per_page.append(f'<!-- {p.uid} TRIGGER VARIABLES -->')
+            [output_list_per_page.append(decl) for decl in generate_var_declarations(vars_dict, name_sorted=True)]
+            [processed_var_names.add(var_name) for var_name in vars_dict.keys()]
+
+    output_list_other = ['\n', f'<!-- declared, but no usage found -->']
+    vars_dict = {var.name: var.type for var in q.var_declarations.values() if var.name not in processed_var_names}
+    [output_list_other.append(decl) for decl in generate_var_declarations(vars_dict, name_sorted=True)]
+
+    if not unknown_var_types:
+        return output_list_other + output_list_per_page
+    else:
+        output_list_unknown = ['\n', f'<!-- UNKNOWN VARIABLE TYPES -->']
+        vars_dict = {var_name: '???' for var_name in unknown_var_types if var_name not in processed_var_names}
+        [output_list_unknown.append(f'<!-- {decl} -->') for decl in
+         generate_var_declarations(vars_dict, name_sorted=True)]
+        [processed_var_names.add(var_name) for var_name in vars_dict.keys()]
+        return output_list_unknown + output_list_other + output_list_per_page
 
 
 RE_ZOFAR_FN_AS_NUMBER = re.compile(r'zofar\.asNumber\(([a-zA-Z0-9_]+)\)')

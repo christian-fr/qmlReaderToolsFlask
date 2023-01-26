@@ -38,6 +38,8 @@
                         </tr>
                     {% endfor %}
                 </table>
+            {% elif 'raw' in val and val['raw'] %}
+                <pre>{{ val['data'] }}</pre>
 
             {% elif 'table' in val %}
                 {% if val['table'] == True %}
