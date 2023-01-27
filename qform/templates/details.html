@@ -40,7 +40,16 @@
                 </table>
             {% elif 'raw' in val and val['raw'] %}
                 <pre>{{ val['data'] }}</pre>
-
+{#            {% elif val['data'].__class__.__name__ == 'list' %}#}
+{#                <table class="detailsEntry">#}
+{##}
+{#                    {% for entry in val['data'] %}#}
+{#                        <tr>#}
+{#                            <td>{{ entry }}</td>#}
+{#                        </tr>#}
+{#                    {% endfor %}#}
+{##}
+{#                </table>#}
             {% elif 'table' in val %}
                 {% if val['table'] == True %}
                     <table>
@@ -76,6 +85,8 @@
                 <ul class="detailsEntry">
                     <p>{{ entry }}</p>
                 </ul>
+            {% else %}
+                {{ val['data']|string }}
             {% endif %}
 
         </section>
