@@ -5,6 +5,14 @@ from qrt.util.qml import Questionnaire, ZOFAR_PAGE_TAG, NS
 # from qrt.util.questionnaire import Questionnaire
 from lxml.etree import ElementTree as lEt
 from qrt.util.graph import prepare_digraph, topologically_sorted_nodes, remove_self_loops, find_cycles
+import tomllib
+
+
+def read_pv(input_str: str) -> Questionnaire:
+    pv_parsed = tomllib.loads(input_str)
+    survey = pv_parsed.pop('survey')
+    pages = sorted(list({q_data['page'] for q_id, q_data in pv_parsed.items()}))
+    pass
 
 
 def flatten(ll: List[Union[List[Any], Tuple[Any]]]) -> Generator[Any, Any, None]:
