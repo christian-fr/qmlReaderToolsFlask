@@ -6,18 +6,23 @@ survey = "Nacaps2022"
 page = "A01"
 type = "matrixQuestionSingleChoice"
 headers = [
-          {uid="q1", type="question", text="Hier ist die Frage."},
-          {uid="ins1", type="instruction", text="Hier ist ein Hinweis."},
-          {uid="q2", type="question", text="Hier ist noch eine Frage."}]
-aos = [{uid="ao1", value="1", label="erste"},
-       {uid="ao2", value="2", label="zweite"},
-       {uid="ao3", value="3", label="dritte"},
-       {uid="ao4", value="4", label="vierte", visible="zofar.asNumber(var01) != 2"}]
-item1 = {uid="it1", variable="var01a", text="Dies ist das erste Item."}
-item2 = {uid="it2", variable="var01b", text="Dies ist das zweite Item."}
-item3 = {uid="it3", variable="var01c", text="Dies ist das dritte Item mit einem...", attachedOpen=[
-                            {uid="att1", variable="var02", prefix={}, postfix={}}
-                            ]}
+    { uid = "q1", type = "question", text = "Hier ist die Frage." },
+    { uid = "ins1", type = "instruction", text = "Hier ist ein Hinweis." },
+    { uid = "q2", type = "question", text = "Hier ist noch eine Frage.", visible = "" }
+]
+aos = [
+    { uid = "ao1", value = "1", label = "erste" },
+    { uid = "ao2", value = "2", label = "zweite" },
+    { uid = "ao3", value = "3", label = "dritte" },
+    { uid = "ao4", value = "4", label = "vierte", visible = "zofar.asNumber(var01) != 2" }
+]
+items = [
+    { uid = "it1", variable = "var01a", text = "Dies ist das erste Item." },
+    { uid = "it2", variable = "var01b", text = "Dies ist das zweite Item.", visible = "var00.value" },
+    { uid = "it3", variable = "var01c", text = "Dies ist das dritte Item mit einem...", attachedOpen = [
+        { uid = "att1", variable = "var02", prefix = { }, postfix = { } }
+    ] }
+]
 
 [Q002]
 page = "A01"
