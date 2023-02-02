@@ -5,10 +5,11 @@ survey = "Nacaps2022"
 [Q001]
 page = "A01"
 type = "matrixQuestionSingleChoice"
+parent = "new"
 headers = [
     { uid = "q1", type = "question", text = "Hier ist die Frage." },
-    { uid = "ins1", type = "instruction", text = "Hier ist ein Hinweis." },
-    { uid = "q2", type = "question", text = "Hier ist noch eine Frage.", visible = "" }
+    { uid = "ins1", type = "instruction", text = "Hier ist _ein_ Hinweis." },
+    { uid = "q2", type = "question", text = "*Hier* ist noch **eine Frage**.", visible = "" }
 ]
 aos = [
     { uid = "ao1", value = "1", label = "erste" },
@@ -23,18 +24,22 @@ items = [
         { uid = "att1", variable = "var02", prefix = { }, postfix = { } }
     ] }
 ]
+notes = ""
 
 [Q002]
 page = "A01"
 type = "monthpicker"
+parent = "new"
 variable = "var03"
 minDate = 2000-01-01T01:00:00Z
 maxDate = 2022-12-31T01:00:00Z
-
+notes = ""
 
 [Q003]
 page = "A02"
 type = "monthpicker"
+parent = "new"
 variable = "var04"
 minDate = 2000-01-01T01:00:00Z
 maxDate = 2022-12-31T01:00:00Z
+notes = ""

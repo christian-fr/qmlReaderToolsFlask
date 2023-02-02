@@ -6,7 +6,8 @@ from lxml.etree import _Element as _lE, ElementTree as lEt, tostring as l_to_str
 
 from qrt.util.qml import flatten, HEADER, MIS_HEADER, QSC, MC, MMC, MQSC, QO, ATTQO, MQO, RD, AO, ITEM, TITLE, TEXT, \
     INS, INT, QUE
-from qrt.util.qmlgen import *
+import html
+
 
 VAR_TYPE_SC = "singleChoiceAnswerOption"
 VAR_TYPE_BOOL = "boolean"
@@ -171,6 +172,8 @@ class ZofarQuestionOpen(Question):
     type: str = 'questionOpen'
     size: str = "40"
     small_option: bool = True
+    prefix: Optional[str] = None
+    postfix: Optional[str] = None
 
     def gen_xml(self):
         if self.header_list:
@@ -490,7 +493,7 @@ class EnumValues:
 class Page:
     uid: str
     body_vars: List[VarRef] = field(default_factory=dict)
-    body_questions: List[str] = field(default_factory=list)
+    body_questions: List[Question] = field(default_factory=list)
     transitions: List[Transition] = field(default_factory=list)
     var_ref: List[str] = field(default_factory=list)
     _triggers_list: List[Trigger] = field(default_factory=list)
