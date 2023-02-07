@@ -5,7 +5,7 @@ from typing import List, Dict, Optional, Tuple, NewType, Union
 from lxml.etree import _Element as _lE, ElementTree as lEt, tostring as l_to_string
 
 from qrt.util.qml import flatten, HEADER, MIS_HEADER, QSC, MC, MMC, MQSC, QO, ATTQO, MQO, RD, AO, ITEM, TITLE, TEXT, \
-    INS, INT, QUE, PRE, LBL, POST
+    INS, INT, QUE
 from qrt.util.qmlgen import *
 
 VAR_TYPE_SC = "singleChoiceAnswerOption"
@@ -180,8 +180,6 @@ class ZofarQuestionOpen(Question):
     type: str = 'questionOpen'
     size: str = "40"
     small_option: bool = True
-    prefix_list: List[ZofarLabel] = field(default_factory=list)
-    postfix_list: List[ZofarLabel] = field(default_factory=list)
 
     def gen_xml(self):
         if self.header_list:

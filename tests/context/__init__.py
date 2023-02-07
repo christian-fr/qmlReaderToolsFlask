@@ -1,7 +1,9 @@
 from pathlib import Path
-
 from qrt.util.qml import read_xml
-from qrt.util.questionnaire import Questionnaire
+
+# from qrt.util.qml import Questionnaire
+
+pv01_str = Path('context/pv01.toml').read_text(encoding='utf-8')
 
 MQSC_XML_STR_01 = """<zofar:matrixQuestionSingleChoice uid="mqsc" block="true">
   <zofar:header>

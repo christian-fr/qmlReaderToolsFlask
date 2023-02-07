@@ -1,0 +1,45 @@
+# Zofar Programmiervorlage / Dokumentation
+
+survey = "Nacaps2022"
+
+[Q001]
+page = "A01"
+type = "matrixQuestionSingleChoice"
+parent = "new"
+headers = [
+    { uid = "q1", type = "question", text = "Hier ist die Frage." },
+    { uid = "ins1", type = "instruction", text = "Hier ist _ein_ Hinweis." },
+    { uid = "q2", type = "question", text = "*Hier* ist noch **eine Frage**.", visible = "" }
+]
+aos = [
+    { uid = "ao1", value = "1", label = "erste" },
+    { uid = "ao2", value = "2", label = "zweite" },
+    { uid = "ao3", value = "3", label = "dritte" },
+    { uid = "ao4", value = "4", label = "vierte", visible = "zofar.asNumber(var01) != 2" }
+]
+items = [
+    { uid = "it1", variable = "var01a", text = "Dies ist das erste Item." },
+    { uid = "it2", variable = "var01b", text = "Dies ist das zweite Item.", visible = "var00.value" },
+    { uid = "it3", variable = "var01c", text = "Dies ist das dritte Item mit einem...", attachedOpen = [
+        { uid = "att1", variable = "var02", prefix = { }, postfix = { } }
+    ] }
+]
+notes = ""
+
+[Q002]
+page = "A01"
+type = "monthpicker"
+parent = "new"
+variable = "var03"
+minDate = 2000-01-01T01:00:00Z
+maxDate = 2022-12-31T01:00:00Z
+notes = ""
+
+[Q003]
+page = "A02"
+type = "monthpicker"
+parent = "new"
+variable = "var04"
+minDate = 2000-01-01T01:00:00Z
+maxDate = 2022-12-31T01:00:00Z
+notes = ""
