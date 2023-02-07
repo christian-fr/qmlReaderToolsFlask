@@ -5,7 +5,7 @@ from typing import List, Dict, Optional, Tuple, NewType, Union
 from lxml.etree import _Element as _lE, ElementTree as lEt, tostring as l_to_string
 
 from qrt.util.qml import flatten, HEADER, MIS_HEADER, QSC, MC, MMC, MQSC, QO, ATTQO, MQO, RD, AO, ITEM, TITLE, TEXT, \
-    INS, INT, QUE
+    INS, INT, QUE, PRE, LBL, POST
 from qrt.util.qmlgen import *
 
 VAR_TYPE_SC = "singleChoiceAnswerOption"
@@ -13,7 +13,7 @@ VAR_TYPE_BOOL = "boolean"
 VAR_TYPE_STR = "string"
 VAR_TYPE_NUM = "number"
 
-SC_TYPE_DROPDOWN = "dropDown"
+SC_TYPE_DROPDOWN = "dropdown"
 
 ON_EXIT_DEFAULT = 'true'
 DIRECTION_DEFAULT = 'forward'
@@ -166,18 +166,34 @@ class Question(ZofarPageObject):
 
 # noinspection PyDataclass
 @dataclass(kw_only=True)
+class ZofarLabel(ZofarPageObject):
+    content: str
+
+    def gen_xml(self):
+        return LBL(self.content, uid=self.uid, visible=self.visible)
+
+
+# noinspection PyDataclass
+@dataclass(kw_only=True)
 class ZofarQuestionOpen(Question):
     var_ref: VarRef
     type: str = 'questionOpen'
     size: str = "40"
     small_option: bool = True
+    prefix_list: List[ZofarLabel] = field(default_factory=list)
+    postfix_list: List[ZofarLabel] = field(default_factory=list)
 
     def gen_xml(self):
         if self.header_list:
-            return QO(HEADER(*[h.gen_xml() for h in self.header_list]), uid=self.uid, visible=self.visible,
+            return QO(HEADER(*[h.gen_xml() for h in self.header_list]),
+                      PRE(*[pre.gen_xml() for pre in self.prefix_list]),
+                      POST(*[post.gen_xml() for post in self.postfix_list]),
+                      uid=self.uid, visible=self.visible,
                       variable=self.var_ref.variable.name, size=self.size, smallOption=str(self.small_option).lower())
         else:
-            return QO(uid=self.uid, visible=self.visible,
+            return QO(PRE(*[pre.gen_xml() for pre in self.prefix_list]),
+                      POST(*[post.gen_xml() for post in self.postfix_list]),
+                      uid=self.uid, visible=self.visible,
                       variable=self.var_ref.variable.name, size=self.size,
                       smallOption=str(self.small_option).lower())
 
