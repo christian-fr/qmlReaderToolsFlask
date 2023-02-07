@@ -646,7 +646,7 @@ class Questionnaire:
 
         # all condition != '"false"' transition targets
         condition_not_false_transitions = set(flatten(
-            [[tr.target_uid for tr in p.transitions if tr.condition is not None and tr.condition.strip() != 'false'] for
+            [[tr.target_uid for tr in p.transitions if tr.condition is None or tr.condition.strip() != 'false'] for
              p in self.pages]))
         # set difference
         only_false_conditions = condition_false_transitions.difference(condition_not_false_transitions)
