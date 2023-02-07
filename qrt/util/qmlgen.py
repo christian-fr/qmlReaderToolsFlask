@@ -13,7 +13,7 @@ from qrt.util.questionnaire import HeaderQuestion, HeaderTitle, HeaderInstructio
     ZofarQuestionSC, HeaderObject, MCAnswerOption, ZofarQuestionOpen, VAR_TYPE_STR
 
 
-def unescape_html(input_str: str) -> str:
+def unescape_html(escaped_str: str) -> str:
     char_list = ['ä', 'Ä', 'ö', 'Ö', 'ü', 'Ü', 'ß']
     char_dict = {html.escape(char): char for char in char_list}
     special_chars = ["&amp;", "&lt;", "&gt;"]
