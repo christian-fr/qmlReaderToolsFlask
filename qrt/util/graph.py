@@ -1,7 +1,7 @@
 import re
 from collections import defaultdict
 from pathlib import Path
-from typing import Optional, Dict, List
+from typing import Optional, Dict, List, Tuple
 import networkx as nx
 
 from qrt.util.qml import Questionnaire, flatten
@@ -42,14 +42,36 @@ def topologically_sorted_nodes(g: nx.DiGraph) -> List[str]:
         return []
 
 
+def combine_transition_cond(q: Questionnaire) -> List[Tuple[str, str, Dict[str, str]]]:
+    tr_tuples = defaultdict(list)
+    for p in q.pages:
+        for i, tr in enumerate(p.transitions):
+            tr_tuples[(p.uid, tr.target_uid)].append((i, p, tr.target_uid, tr.condition))
+    result = []
+    for tr_u_v, tr_tuple_list in tr_tuples.items():
+        cond_str_ls = []
+        for index, _, _, condition in tr_tuple_list:
+            if condition is None:
+                cond_str_ls.append(f'[{index}]')
+            else:
+                cond_str = re.sub(r"\s+", " ", condition)
+                cond_str_ls.append(f'[{index}] {cond_str}')
+        result.append((tr_u_v[0], tr_u_v[1], {'label': ' | \n'.join(cond_str_ls)}))
+    return result
+
+
 def digraph(q: Questionnaire,
             show_var: bool = True,
             show_cond: bool = True,
             color_nodes: bool = False) -> nx.DiGraph:
     g = nx.DiGraph()
-    tr_tuples = flatten([[(p.uid, t.target_uid, {'label': t.condition}) if t.condition is not None and show_cond
-                          else (p.uid, t.target_uid) for t in p.transitions]
-                         for p in q.pages])
+    if show_cond:
+        tr_tuples = combine_transition_cond(q)
+    else:
+        tr_tuples = flatten([[(p.uid, t.target_uid, {'label': t.condition}) if t.condition is not None and show_cond
+                              else (p.uid, t.target_uid, {'label': None}) for t in p.transitions]
+                             for p in q.pages])
+
     if color_nodes:
         tr_tuples = [tp for tp in tr_tuples]
         nodes = set(flatten([tp[0:1] for tp in tr_tuples]))
@@ -68,7 +90,6 @@ def digraph(q: Questionnaire,
                 break
             else:
                 [g.add_node(u, style='filled', fillcolor=node_color) for u in nodes if u.startswith(node_beginning)]
-
     g.add_edges_from([t for t in tr_tuples])
 
     if show_var:
@@ -80,8 +101,8 @@ def digraph(q: Questionnaire,
         [[vars_d[p.uid].add(var) for var in p.triggers_vars_explicit] for p in q.pages]
         vars_d = {k: list(v) for k, v in vars_d.items()}
         replacement_dict = {
-            uid: f'{uid}\n' + ',\n'.join(
-                [",".join(y) for y in [vars_d[uid][i:i + 3] for i in range(0, len(vars_d[uid]), 3)]]) for uid
+            uid: f'{uid}\\n[' + ',\\n'.join(
+                [",".join(y) for y in [vars_d[uid][i:i + 3] for i in range(0, len(vars_d[uid]), 3)]]) + ']' for uid
             in [p.uid for p in q.pages]}
         # (vars_d[uid]) for uid in [p.uid for p in q.pages]}
         g = nx.relabel_nodes(g, replacement_dict)
@@ -98,6 +119,7 @@ def make_flowchart(q: Questionnaire,
     g = digraph(q=q, show_var=show_var, show_cond=show_cond, color_nodes=color_nodes)
     # ToDo: add filename
     a = nx.nx_agraph.to_agraph(g)
+    a.node_attr['shape'] = 'box'
     if filename is not None:
         a.graph_attr['label'] = filename
     a.layout('dot')
