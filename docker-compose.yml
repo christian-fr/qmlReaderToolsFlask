@@ -4,13 +4,13 @@ services:
   app:
     container_name: app
     build:
-      context: secure-flask-container-template
+      context: .
     ports:
       - 5555:5555
     environment:
       SERVICE_PORT: 5555
-      # FLASK_USER: ""
-      # FLASK_PW_HASH: ""
+      FLASK_USER: ${FLASK_USER}
+      FLASK_PW_HASH: ${FLASK_PW_HASH}
     volumes:
       - /var/secure-api/share/web:/share
     networks:
@@ -18,7 +18,7 @@ services:
 
   nginx:
     build:
-      context: nginx
+      context: ./nginx
     ports:
       - 80:80
       - 443:443
@@ -32,7 +32,7 @@ services:
 
   certbot-auto:
     build:
-      context: certbot-auto
+      context: ./certbot-auto
     volumes:
       - /var/secure-api/data/certbot/conf:/etc/letsencrypt
       - /var/secure-api/data/certbot/www:/var/www/certbot
