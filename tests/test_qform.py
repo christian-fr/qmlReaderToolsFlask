@@ -1,8 +1,7 @@
 from unittest import TestCase
 from tests.context import test_qml_path, test_questionnaire
 from qrt.util.util import qml_details
-from qrt.util.questionnaire import Questionnaire
-from qform import prepare_dict_for_html
+# from qrt.util.questionnaire import Questionnaire
 
 
 class Test(TestCase):
@@ -19,7 +18,6 @@ class Test(TestCase):
 
     def test_prepare_dict_for_html(self):
         d = qml_details(self.q)
-        # h = prepare_dict_for_html(d)
         assert True
 
 
