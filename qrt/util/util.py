@@ -50,6 +50,15 @@ def qml_details(q: Questionnaire, filename: Optional[str] = None) -> Dict[str, D
     cycles = find_cycles(g_cleaned)
 
     json_data_dict = find_json_episode_data(q)
+
+    all_aux_trig_var_impl = {var for var in flatten([v for v in json_data_dict['aux_var_impl'].values()])}
+    all_aux_trig_var_expl = {var for var in flatten([v for v in json_data_dict['aux_var_expl'].values()])}
+
+    all_aux_trig_var = all_aux_trig_var_impl.union(all_aux_trig_var_expl)
+
+    unused_variables = {k: v for k, v in q.vars_declared_not_used().items() if
+                        k not in all_aux_trig_var and not k.startswith('PRELOAD') and k != 'language'}
+
     headers = ('page', *sorted(json_data_dict.keys()))
     json_episode_data_table = [['page', *sorted(json_data_dict.keys())]]
     for p in q.pages:
@@ -102,7 +111,7 @@ def qml_details(q: Questionnaire, filename: Optional[str] = None) -> Dict[str, D
     details_dict['all_variables_declared'] = {'title': 'variables declared',
                                               'data': q.all_vars_declared()}
     details_dict['declared_but_unused_vars'] = {'title': 'variables declared but not used',
-                                                'data': q.vars_declared_not_used()}
+                                                'data': unused_variables}
     details_dict['used_but_undeclared_vars'] = {'title': 'variables used but not declared',
                                                 'data': q.vars_used_not_declared()}
     # variable declarations

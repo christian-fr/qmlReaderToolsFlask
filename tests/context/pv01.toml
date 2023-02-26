@@ -25,6 +25,7 @@ items = [
     ] }
 ]
 notes = ""
+css=""
 
 [Q002]
 page = "A01"
@@ -34,6 +35,7 @@ variable = "var03"
 minDate = 2000-01-01T01:00:00Z
 maxDate = 2022-12-31T01:00:00Z
 notes = ""
+css=""
 
 [Q003]
 page = "A02"
@@ -43,3 +45,4 @@ variable = "var04"
 minDate = 2000-01-01T01:00:00Z
 maxDate = 2022-12-31T01:00:00Z
 notes = ""
+css=""

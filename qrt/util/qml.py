@@ -619,7 +619,7 @@ class Questionnaire:
         return {var_name: var.type for var_name, var in self.var_declarations.items()}
 
     def vars_declared_not_used(self) -> Dict[str, str]:
-        names_missing = set(self.all_vars_declared().keys()).difference(self.all_page_body_vars().keys())
+        names_missing = sorted(list(set(self.all_vars_declared().keys()).difference(self.all_page_body_vars().keys())))
         return {varname: self.all_vars_declared()[varname] for varname in names_missing}
 
     def vars_declared_used_inconsistent(self) -> Dict[str, List[str]]:

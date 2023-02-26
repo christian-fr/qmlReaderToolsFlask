@@ -10,7 +10,7 @@ from qrt.util.questionnaire import HeaderQuestion, HeaderTitle, HeaderInstructio
     check_for_unique_uids, \
     MatrixResponseDomain, VarRef, Variable, VAR_TYPE_SC, VAR_TYPE_BOOL, SCMatrixItem, SCResponseDomain, \
     ZofarQuestionSCMatrix, \
-    ZofarQuestionSC, HeaderObject, MCAnswerOption, ZofarQuestionOpen, VAR_TYPE_STR
+    ZofarQuestionSC, HeaderObject, MCAnswerOption, ZofarQuestionOpen, VAR_TYPE_STR, SC_TYPE_DROPDOWN
 
 
 def unescape_html(escaped_str: str) -> str:
@@ -44,11 +44,10 @@ def create_headers(data_dict: Dict[str, Dict[str, str]]) -> List[HeaderObject]:
 
 
 def gen_qsc(data_dict: Dict[str, Union[List, Dict, str]]) -> str:
-    assert data_dict['q_type']
     header_list = create_headers(data_dict=data_dict['headers'])
 
     ao_list = [SCAnswerOption(uid=ao['uid'], value=ao['value'], label=ao['label'])
-               for i, ao in data_dict['aos'].items()]
+               for i, ao in sorted(data_dict['aos'].items(), key=lambda x: x[0])]
 
     assert check_for_unique_uids(header_list)
     assert check_for_unique_uids(ao_list)
@@ -57,8 +56,9 @@ def gen_qsc(data_dict: Dict[str, Union[List, Dict, str]]) -> str:
                'var_ref': VarRef(variable=Variable(name=data_dict['q_variable'],
                                                    type=VAR_TYPE_SC)),
                'ao_list': ao_list}
+
     if 'rd_type' in data_dict:
-        rd_dict.update({'rd_type': data_dict['rd_type']})
+        rd_dict.update({'rd_type': SC_TYPE_DROPDOWN})
     rd = SCResponseDomain(**rd_dict)
 
     qsc = ZofarQuestionSC(uid=data_dict['q_uid'], header_list=header_list, response_domain=rd,
@@ -86,9 +86,10 @@ def gen_mc(data_dict: Dict[str, Union[List, Dict, str]]) -> str:
             ao_dict.update({'exclusive': ao['exclusive']})
         if 'attached_open' in ao:
             attached_open_list = []
-            #raise NotImplementedError
+            # raise NotImplementedError
             for j, attached_open in ao['attached_open'].items():
-                att_open_obj = ZofarQuestionOpen(uid="open", var_ref=VarRef(variable=Variable(name="ap09g", type=VAR_TYPE_STR)))
+                att_open_obj = ZofarQuestionOpen(uid="open",
+                                                 var_ref=VarRef(variable=Variable(name="ap09g", type=VAR_TYPE_STR)))
                 attached_open_list.append(att_open_obj)
         ao_list.append(MCAnswerOption(**ao_dict))
 
@@ -129,6 +130,20 @@ def gen_mqmc(data_dict: Dict[str, Union[List, Dict, str]]) -> str:
 
 def gen_mqqo(data_dict: Dict[str, Union[List, Dict, str]]) -> str:
     pass
+
+
+def unescape_characters(input_str: str) -> str:
+    # umlaute etc. get automatically replaced by their html escape codes when being written by the parser
+    # replace them back (remove html escapes and replace by non-ascii characters)
+    matches = re.findall(r'(&#.{,5};)', input_str)
+    matches_set = set(matches)
+    if len(matches_set) > 0:
+        print('\n' + f'The following characters will be replaced:')
+        for match in matches_set:
+            match_replacement = html.unescape(match)
+            print(f'    {match=} -> {match_replacement}')
+            input_str = input_str.replace(match, match_replacement)
+    return input_str
 
 
 def gen_mqsc(data_dict: Dict[str, Union[List, Dict, str]]) -> str:
