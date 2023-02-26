@@ -1,3 +1,4 @@
+import base64
 import os
 import re
 import secrets
@@ -6,10 +7,10 @@ import uuid
 from collections import defaultdict
 from functools import wraps
 from pathlib import Path
-from typing import Any, Dict, Optional, List, Union, Tuple
-import bcrypt
+from typing import Dict, Optional, Union, Tuple
 import pkg_resources
 import waitress as waitress
+import hashlib
 
 from qrt.util.qmlgen import gen_mqsc
 from qrt.util.util import qml_details
@@ -31,15 +32,42 @@ app.config['SESSION_TYPE'] = 'filesystem'
 app.secret_key = secrets.token_hex(16)
 
 
+def b64decode(inp: bytes) -> bytes:
+    return base64.b64decode(inp)
+
+
+def b64encode(inp: bytes) -> bytes:
+    return base64.b64encode(inp)
+
+
+def split_salt_pw(salted_pw: bytes) -> Tuple[bytes, bytes]:
+    return salted_pw[:salted_pw.rfind(b'#') + 1], salted_pw[salted_pw.rfind(b'#') + 1:]
+
+
+def gen_salt(rounds: int = 12, prefix: bytes = b'1a') -> bytes:
+    if prefix not in (b'1a'):
+        raise ValueError('Prefix not found')
+    if rounds < 4 or rounds > 9:
+        raise ValueError('Invalid rounds')
+    salt = os.urandom(16)
+    b64salt = b64encode(salt)[:-2]
+    return b'#' + prefix + b'#' + ('%2.2u' % rounds).encode('ascii') + b64salt + b'#'
+
+
+def hashpass(password: bytes, salt: bytes):
+    rounds = int(salt[4:6])
+    hashed_pw = hashlib.scrypt(password, salt=salt, n=2 ** rounds, r=4, p=1)
+    return hashed_pw
+
+
 def get_hashed_password(plain_text_password: bytes) -> bytes:
-    # Hash a password for the first time
-    #   (Using bcrypt, the salt is saved into the hash itself)
-    return bcrypt.hashpw(plain_text_password, bcrypt.gensalt())
+    salt = gen_salt(9)
+    hashed_pw = hashpass(password=plain_text_password, salt=salt)
+    return salt + b64encode(hashed_pw)
 
 
 def check_password(plain_text_password: bytes, hashed_password: bytes) -> bool:
-    # Check hashed password. Using bcrypt, the salt is saved into the hash itself
-    return bcrypt.checkpw(plain_text_password, hashed_password)
+    pass
 
 
 @app.context_processor
@@ -56,6 +84,11 @@ def cleanup_credentials(cred: Union[str, None]):
         if len(cred) == 0:
             cred = None
     return cred
+
+
+def check_pass(salted_hashed_pw: bytes, plain_text_passw: bytes) -> bool:
+    salt, hashed_pw = split_salt_pw(salted_hashed_pw)
+    return b64encode(hashpass(password=plain_text_passw, salt=salt)) == hashed_pw
 
 
 flask_user = cleanup_credentials(os.environ.get('FLASK_USER'))
@@ -186,7 +219,7 @@ def do_login():
     us_correct = request.form['username'].encode('utf-8') == flask_user.encode('utf-8')
     pw_correct = False
     try:
-        pw_correct = check_password(request.form['password'].encode('utf-8'), flask_pw_hash.encode('utf-8'))
+        pw_correct = check_pass(flask_pw_hash.encode('utf-8'), request.form['password'].encode('utf-8'))
     except ValueError as err:
         flash(err.args[0])
     if pw_correct and us_correct:
@@ -645,4 +678,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-
