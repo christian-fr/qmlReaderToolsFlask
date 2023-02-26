@@ -1,13 +1,12 @@
-from setuptools import setup, find_packages
+from setuptools import setup
 
 setup(
     name='qmlReaderToolsFlask',
-    version='1.0.0',
+    version='',
     packages=['qrt', 'qrt.util', 'qform', 'tests', 'tests.context'],
     url='',
     license='',
-    author='friedrich',
-    author_email='',
-    description='',
-    include_package_data=True
+    author='christian',
+    author_email='info@chr-fr.net',
+    description=''
 )

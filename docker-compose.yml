@@ -1,9 +1,45 @@
-version: "3.9"
+version: "3.8"
+
 services:
-  web:
-    build: .
+  app:
+    container_name: app
+    build:
+      context: .
     ports:
-      - "8000:5000"
+      - 5555:5555
     environment:
-      FLASK_USER: " "
-      FLASK_PASS: " "
+      SERVICE_PORT: 5555
+      FLASK_USER: ${FLASK_USER}
+      FLASK_PW_HASH: ${FLASK_PW_HASH}
+    volumes:
+      - /var/secure-api/share/web:/share
+    networks:
+      - main
+
+  nginx:
+    build:
+      context: ./nginx
+    ports:
+      - 80:80
+      - 443:443
+    environment:
+      DOMAIN_NAME: $DOMAIN_NAME
+    volumes:
+      - /var/secure-api/data/certbot/conf:/etc/letsencrypt
+      - /var/secure-api/data/certbot/www:/var/www/certbot
+    networks:
+      - main
+
+  certbot-auto:
+    build:
+      context: ./certbot-auto
+    volumes:
+      - /var/secure-api/data/certbot/conf:/etc/letsencrypt
+      - /var/secure-api/data/certbot/www:/var/www/certbot
+    environment:
+      DOMAIN_NAME: $DOMAIN_NAME
+      EMAIL_ADDRESS: $EMAIL_ADDRESS
+
+networks:
+    main:
+      driver: bridge
