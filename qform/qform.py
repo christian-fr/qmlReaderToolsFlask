@@ -8,6 +8,8 @@ from collections import defaultdict
 from functools import wraps
 from pathlib import Path
 from typing import Dict, Optional, Union, Tuple
+
+import lxml.etree
 import pkg_resources
 import waitress as waitress
 import hashlib
@@ -451,7 +453,13 @@ def generate_mqsc(data_dict):
 def process_xml(file_id) -> None:
     file_meta = file_dict()[file_id]
     filename = file_meta['internal_filename']
-    q = read_xml(Path(upload_dir(), filename))
+    try:
+        q = read_xml(Path(upload_dir(), filename))
+    except ParseError:
+        try:
+            lxml.etree.parse(Path(upload_dir(), filename))
+        except lxml.etree.XMLSyntaxError as synterr:
+            raise ParseError(synterr.msg)
     file_dict()[file_id]['questionnaire'] = q
 
 
