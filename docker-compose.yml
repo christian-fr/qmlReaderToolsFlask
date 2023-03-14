@@ -27,6 +27,7 @@ services:
     volumes:
       - /var/secure-api/data/certbot/conf:/etc/letsencrypt
       - /var/secure-api/data/certbot/www:/var/www/certbot
+      - ./nginx/client_max_body_size.conf:/etc/nginx/conf.d/client_max_body_size.conf:ro
     networks:
       - main
 
