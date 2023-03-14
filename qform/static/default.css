@@ -5,6 +5,7 @@
 }
 
 body {
+    margin-left: 1rem;
     font-family: Monospaced, monospace;
     color: midnightblue
 }

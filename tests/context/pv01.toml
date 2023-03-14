@@ -5,7 +5,8 @@ survey = "Nacaps2022"
 [Q001]
 page = "A01"
 type = "matrixQuestionSingleChoice"
-parent = "new"
+parents = ["new"]
+visible = ""
 headers = [
     { uid = "q1", type = "question", text = "Hier ist die Frage." },
     { uid = "ins1", type = "instruction", text = "Hier ist _ein_ Hinweis." },

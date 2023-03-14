@@ -71,6 +71,34 @@ def qml_details(q: Questionnaire, filename: Optional[str] = None) -> Dict[str, D
         assert len(headers) == len(tmp_list)
         json_episode_data_table.append({k: v for k, v in zip(headers, tmp_list)})
 
+
+    # manueller Input:
+    # Liste aller Episoden-Pages
+    # episoden pages deklarieren
+    #   "<!-- EPISODE -->"
+    # -> alle Frageobjekte auf der Page -> "episoden-variablen"
+    #    [auf der Page selbst]
+    #    --> reset, load & save
+    #    --> Ausschluss: visible="false"
+    #
+    # [global]
+    # Liste aller "Episoden-Variablen"
+    #
+    # [auf jeder Page]
+    #  --> "visible" / "condition": prüfen, ob "Episoden-Variablen" darin vorkommen
+    #     --> wenn ja: prüfen, ob reset & load-trigger vorhanden
+    #
+    # schon mitdenken: Episoden-Hilfsvariablen
+    #   --> default-setting: Hilfsvariablen werden ins JSON geschrieben
+    #       --> es muss spezifiziert werden, dass sie GLOBAL sein sollen
+    #              "<!-- GLOBAL -->"
+    #   --> nur wenn != GLOBAL: sicherstellen, dass reset, load & save-Trigger vorhanden sind
+    #   --> Konsistenz der Verwendung (GLOBAL / EPISODEN) prüfen
+    #
+    #
+
+    ### all_conditions = [p for p in q.pages]
+
     variable_declarations_per_page = '\t<zofar:variables>\n'
     variable_declarations_per_page += '\t\t' + '\n\t\t'.join(commented_var_declarations(q))
     variable_declarations_per_page += '\n\t</zofar:variables>\n'
@@ -129,6 +157,14 @@ def qml_details(q: Questionnaire, filename: Optional[str] = None) -> Dict[str, D
                                                             'description': '',
                                                             'data': variable_declarations_per_page,
                                                             'raw': True}
+
+    used_varnames_per_page = {k: sorted(list({var.variable.name for var in v})) for k, v in
+                              q.body_vars_per_page_dict().items()}
+    saved_variables = find_json_episode_data(q)['triggers_json_save']
+    details_dict['vars_used_but_not_saved'] = {'title': 'all vars created on a page but not saved per json trigger',
+                                               'description': '',
+                                               'data': variable_declarations_per_page,
+                                               'raw': True}
     return details_dict
 
 
