@@ -468,9 +468,9 @@ def process_graphs(file_id):
         raise ModuleNotFoundError('module "pygraphviz" not found')
 
     file_meta = file_dict()[file_id]
-    flowchart_file1 = Path(upload_dir(), file_id + '_flowchart_var_cond.png')
-    flowchart_file2 = Path(upload_dir(), file_id + '_flowchart_var.png')
-    flowchart_file3 = Path(upload_dir(), file_id + '_flowchart.png')
+    flowchart_file1 = Path(upload_dir(), file_id + '_flowchart_var_cond.svg')
+    flowchart_file2 = Path(upload_dir(), file_id + '_flowchart_var.svg')
+    flowchart_file3 = Path(upload_dir(), file_id + '_flowchart.svg')
 
     make_flowchart(q=file_meta['questionnaire'], out_file=flowchart_file1, show_var=True, show_cond=True)
     make_flowchart(q=file_meta['questionnaire'], out_file=flowchart_file2, show_var=True, show_cond=False)
