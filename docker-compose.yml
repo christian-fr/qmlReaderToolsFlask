@@ -15,6 +15,11 @@ services:
       - /var/secure-api/share/web:/share
     networks:
       - main
+    healthcheck:
+      test:  wget --quiet --tries=3 --spider https://chr-fr.org || exit 1
+      interval: 125s
+      timeout: 120s
+      retries: 3
 
   nginx:
     build:
