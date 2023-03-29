@@ -317,7 +317,7 @@ def process_trigger(trigger: ElementTree.Element) -> Union[TriggerVariable, Trig
     else:
         print('XML string:')
         print(ElementTree.tostring(trigger))
-        raise NotImplementedError(f'triggers: tag not yet implemented: {trigger.tag}')
+        #raise NotImplementedError(f'triggers: tag not yet implemented: {trigger.tag}')
 
 
 def process_triggers(page: ElementTree.Element) -> List[Union[TriggerVariable, TriggerAction, TriggerJsCheck]]:
@@ -674,8 +674,10 @@ class Questionnaire:
 
 
 def get_question_parent(element: _lE) -> str:
-    while element.tag not in ZOFAR_QUESTION_ELEMENTS:
+    while element.tag not in ZOFAR_QUESTION_ELEMENTS and element is not None:
         element = element.getparent()
+        if not hasattr(element, 'tag'):
+            return None
     return element.tag
 
 
@@ -708,7 +710,8 @@ def vars_used(page: _lE) -> List[VarRef]:
                                        ZOFAR_CALENDAR_EPISODES_TAG, ZOFAR_CALENDAR_EPISODES_TABLE_TAG]:
                     var_type = 'string'
                 else:
-                    raise TypeError(f'Unknown variable type for {var_element=}')
+                    # raise TypeError(f'Unknown variable type for {var_element=}')
+                    pass
 
             if 'condition' in element.attrib:
                 condition_list.append(element.attrib['condition'])
