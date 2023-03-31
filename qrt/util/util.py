@@ -71,7 +71,6 @@ def qml_details(q: Questionnaire, filename: Optional[str] = None) -> Dict[str, D
         assert len(headers) == len(tmp_list)
         json_episode_data_table.append({k: v for k, v in zip(headers, tmp_list)})
 
-
     # manueller Input:
     # Liste aller Episoden-Pages
     # episoden pages deklarieren
@@ -144,9 +143,9 @@ def qml_details(q: Questionnaire, filename: Optional[str] = None) -> Dict[str, D
                                                 'data': q.vars_used_not_declared()}
     # variable declarations
     details_dict['used_but_undeclared_variables_declarations'] = {'title': 'declarations for missing variables',
-                                                                  'data': '\n\t\t\t'.join(
-                                                                      sorted(generate_var_declarations(
-                                                                          q.vars_used_not_declared())))}
+                                                                  'data': '\n'.join(sorted(generate_var_declarations(
+                                                                      q.vars_used_not_declared()))),
+                                                                  'raw': True}
     details_dict['used_zofar_functions'] = {'title': 'zofar functions used',
                                             'description': 'no description yet',
                                             'data': all_zofar_functions(q)}

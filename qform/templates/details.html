@@ -26,9 +26,6 @@
                 <div class="detailsComment"> {{ val['comment'] }}</div>
             {% endif %}
 
-            <!-- <div class="detailsEntry">{{ val['data'] }}</div> -->
-
-
             {% if val['data'].__class__.__name__ == 'dict' or val['data'].__class__.__name__ == 'OrderedDict' %}
                 <table class="detailsEntry">
                     {% for key2, val2 in val['data'].items() %}
@@ -40,16 +37,6 @@
                 </table>
             {% elif 'raw' in val and val['raw'] %}
                 <pre>{{ val['data'] }}</pre>
-{#            {% elif val['data'].__class__.__name__ == 'list' %}#}
-{#                <table class="detailsEntry">#}
-{##}
-{#                    {% for entry in val['data'] %}#}
-{#                        <tr>#}
-{#                            <td>{{ entry }}</td>#}
-{#                        </tr>#}
-{#                    {% endfor %}#}
-{##}
-{#                </table>#}
             {% elif 'table' in val %}
                 {% if val['table'] == True %}
                     <table>
@@ -82,9 +69,7 @@
                     </ul>
                 {% endif %}
             {% elif val['data'].__class__.__name__ == 'str' %}
-                <ul class="detailsEntry">
-                    <p>{{ entry }}</p>
-                </ul>
+                <p> {{ val['data'] }}</p>
             {% else %}
                 {{ val['data']|string }}
             {% endif %}

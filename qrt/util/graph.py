@@ -63,14 +63,21 @@ def combine_transition_cond(q: Questionnaire) -> List[Tuple[str, str, Dict[str, 
 def digraph(q: Questionnaire,
             show_var: bool = True,
             show_cond: bool = True,
-            color_nodes: bool = False) -> nx.DiGraph:
+            color_nodes: bool = False,
+            remove_cond_false: bool = True) -> nx.DiGraph:
     g = nx.DiGraph()
     if show_cond:
-        tr_tuples = combine_transition_cond(q)
+        tr_tuples = combine_transition_cond(q, remove_cond_false=remove_cond_false)
     else:
-        tr_tuples = flatten([[(p.uid, t.target_uid, {'label': t.condition}) if t.condition is not None and show_cond
-                              else (p.uid, t.target_uid, {'label': None}) for t in p.transitions]
-                             for p in q.pages])
+        if remove_cond_false:
+            tr_tuples = flatten([[(p.uid, t.target_uid, {
+                'label': t.condition}) if t.condition is not None and t.condition != 'false' and show_cond
+                                  else (p.uid, t.target_uid) for t in p.transitions]
+                                 for p in q.pages])
+        else:
+            tr_tuples = flatten([[(p.uid, t.target_uid, {'label': t.condition}) if t.condition is not None and show_cond
+                                  else (p.uid, t.target_uid) for t in p.transitions]
+                                 for p in q.pages])
 
     if color_nodes:
         tr_tuples = [tp for tp in tr_tuples]

@@ -1,3 +1,4 @@
+import importlib
 import os
 import re
 import secrets
@@ -9,7 +10,6 @@ from pathlib import Path
 from typing import Dict, Optional, Union, Tuple
 
 import lxml.etree
-import pkg_resources
 import waitress as waitress
 from qform.hash import hash_salt_password, verify_password
 from qrt.util.qmlgen import gen_mqsc
@@ -419,7 +419,7 @@ def process_xml(file_id) -> None:
 
 
 def process_graphs(file_id):
-    if 'pygraphviz' not in {pkg.key for pkg in pkg_resources.working_set}:
+    if importlib.util.find_spec('pygraphviz') is None:
         raise ModuleNotFoundError('module "pygraphviz" not found')
 
     file_meta = file_dict()[file_id]
@@ -427,10 +427,10 @@ def process_graphs(file_id):
     flowchart_file2 = Path(upload_dir(), file_id + '_flowchart_var.svg')
     flowchart_file3 = Path(upload_dir(), file_id + '_flowchart.svg')
 
-    make_flowchart(q=file_meta['questionnaire'], out_file=flowchart_file1, show_var=True, show_cond=True)
-    make_flowchart(q=file_meta['questionnaire'], out_file=flowchart_file2, show_var=True, show_cond=False)
     make_flowchart(q=file_meta['questionnaire'], out_file=flowchart_file3, show_var=False, show_cond=False,
                    color_nodes=True)
+    make_flowchart(q=file_meta['questionnaire'], out_file=flowchart_file2, show_var=True, show_cond=False)
+    make_flowchart(q=file_meta['questionnaire'], out_file=flowchart_file1, show_var=True, show_cond=True)
 
     file_meta['flowchart'] = [str(flowchart_file1), str(flowchart_file2), str(flowchart_file3)]
 
