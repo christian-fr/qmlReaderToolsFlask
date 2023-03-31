@@ -317,7 +317,7 @@ def process_trigger(trigger: ElementTree.Element) -> Union[TriggerVariable, Trig
     else:
         print('XML string:')
         print(ElementTree.tostring(trigger))
-        #raise NotImplementedError(f'triggers: tag not yet implemented: {trigger.tag}')
+        # raise NotImplementedError(f'triggers: tag not yet implemented: {trigger.tag}')
 
 
 def process_triggers(page: ElementTree.Element) -> List[Union[TriggerVariable, TriggerAction, TriggerJsCheck]]:
@@ -634,8 +634,8 @@ class Questionnaire:
     def dead_end_pages(self):
         all_transition_targets = set(flatten([[tr.target_uid for tr in p.transitions] for p in self.pages]))
         all_pages = set([p.uid for p in self.pages])
-        lost_pages = all_transition_targets.difference(all_pages)
-        targets_not_found = all_pages.difference(all_transition_targets)
+        targets_not_found = all_transition_targets.difference(all_pages)
+        lost_pages = all_pages.difference(all_transition_targets)
 
         # only condition="false" targets
 
