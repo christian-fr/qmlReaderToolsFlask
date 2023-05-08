@@ -42,7 +42,7 @@ def topologically_sorted_nodes(g: nx.DiGraph) -> List[str]:
         return []
 
 
-def combine_transition_cond(q: Questionnaire) -> List[Tuple[str, str, Dict[str, str]]]:
+def combine_transition_cond(q: Questionnaire, remove_cond_false: bool = False) -> List[Tuple[str, str, Dict[str, str]]]:
     tr_tuples = defaultdict(list)
     for p in q.pages:
         for i, tr in enumerate(p.transitions):
