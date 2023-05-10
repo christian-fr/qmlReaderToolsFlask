@@ -42,6 +42,7 @@ ZOFAR_BODY_TAG = f"{ZOFAR_NS}body"
 ZOFAR_TITLE_TAG = f"{ZOFAR_NS}title"
 ZOFAR_DISPLAY_TAG = f"{ZOFAR_NS}display"
 ZOFAR_TEXT_TAG = f"{ZOFAR_NS}text"
+ZOFAR_LEGACY_CALENDAR_TAG = f"{ZOFAR_NS}calendar"
 ZOFAR_QUESTION_OPEN_TAG = f"{ZOFAR_NS}questionOpen"
 ZOFAR_CALENDAR_EPISODES_TAG = f"{ZOFAR_NS}episodes"
 ZOFAR_CALENDAR_EPISODES_TABLE_TAG = f"{ZOFAR_NS}episodesTable"
@@ -49,7 +50,7 @@ ZOFAR_SINGLE_CHOICE_TAG = f"{ZOFAR_NS}questionSingleChoice"
 ZOFAR_MULTIPLE_CHOICE_TAG = f"{ZOFAR_NS}multipleChoice"
 ZOFAR_MATRIX_QUESTION_OPEN_TAG = f"{ZOFAR_NS}matrixQuestionOpen"
 ZOFAR_MATRIX_SINGLE_CHOICE_TAG = f"{ZOFAR_NS}matrixQuestionSingleChoice"
-ZOFAR_MATRIX_MULTIPLE_CHOICE_TAG = f"{ZOFAR_NS}matrixQuestionMultipleChoice"
+ZOFAR_MATRIX_MULTIPLE_CHOICE_TAG = f"{ZOFAR_NS}matrixMultipleChoice"
 DISPLAY_NAMESPACE = "{http://www.dzhw.eu/zofar/xml/display}"
 ZOFAR_DISPLAY_TEXT_TAG = f"{DISPLAY_NAMESPACE}text"
 ON_EXIT_DEFAULT = 'true'
@@ -59,7 +60,7 @@ CONDITION_DEFAULT = 'true'
 ZOFAR_QUESTION_ELEMENTS = [ZOFAR_QUESTION_OPEN_TAG, ZOFAR_SINGLE_CHOICE_TAG, ZOFAR_MULTIPLE_CHOICE_TAG,
                            ZOFAR_MATRIX_MULTIPLE_CHOICE_TAG, ZOFAR_MATRIX_QUESTION_OPEN_TAG,
                            ZOFAR_MATRIX_SINGLE_CHOICE_TAG, ZOFAR_MATRIX_MULTIPLE_CHOICE_TAG,
-                           ZOFAR_CALENDAR_EPISODES_TAG, ZOFAR_CALENDAR_EPISODES_TABLE_TAG]
+                           ZOFAR_CALENDAR_EPISODES_TAG, ZOFAR_CALENDAR_EPISODES_TABLE_TAG, ZOFAR_LEGACY_CALENDAR_TAG]
 
 RE_VAL = re.compile(r'#{([a-zA-Z0-9_]+)\.value}')
 RE_VAL_OF = re.compile(r'#{zofar\.valueOf\(([a-zA-Z0-9_]+)\)}')
@@ -317,7 +318,7 @@ def process_trigger(trigger: ElementTree.Element) -> Union[TriggerVariable, Trig
     else:
         print('XML string:')
         print(ElementTree.tostring(trigger))
-        # raise NotImplementedError(f'triggers: tag not yet implemented: {trigger.tag}')
+        raise NotImplementedError(f'triggers: tag not yet implemented: {trigger.tag}')
 
 
 def process_triggers(page: ElementTree.Element) -> List[Union[TriggerVariable, TriggerAction, TriggerJsCheck]]:
@@ -634,8 +635,8 @@ class Questionnaire:
     def dead_end_pages(self):
         all_transition_targets = set(flatten([[tr.target_uid for tr in p.transitions] for p in self.pages]))
         all_pages = set([p.uid for p in self.pages])
-        targets_not_found = all_transition_targets.difference(all_pages)
-        lost_pages = all_pages.difference(all_transition_targets)
+        lost_pages = all_transition_targets.difference(all_pages)
+        targets_not_found = all_pages.difference(all_transition_targets)
 
         # only condition="false" targets
 
@@ -674,7 +675,7 @@ class Questionnaire:
 
 
 def get_question_parent(element: _lE) -> str:
-    while element.tag not in ZOFAR_QUESTION_ELEMENTS and element is not None:
+    while element is not None and element.tag not in ZOFAR_QUESTION_ELEMENTS:
         element = element.getparent()
         if not hasattr(element, 'tag'):
             return None
@@ -710,8 +711,7 @@ def vars_used(page: _lE) -> List[VarRef]:
                                        ZOFAR_CALENDAR_EPISODES_TAG, ZOFAR_CALENDAR_EPISODES_TABLE_TAG]:
                     var_type = 'string'
                 else:
-                    # raise TypeError(f'Unknown variable type for {var_element=}')
-                    pass
+                    raise TypeError(f'Unknown variable type for {var_element=}')
 
             if 'condition' in element.attrib:
                 condition_list.append(element.attrib['condition'])

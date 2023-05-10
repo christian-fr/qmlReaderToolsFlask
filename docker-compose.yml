@@ -16,7 +16,7 @@ services:
     networks:
       - main
     healthcheck:
-      test:  wget --quiet --tries=3 --spider https://chr-fr.org || exit 1
+      test: wget --quiet --tries=3 --spider https://chr-fr.org || exit 1
       interval: 125s
       timeout: 120s
       retries: 3
@@ -46,6 +46,28 @@ services:
       DOMAIN_NAME: $DOMAIN_NAME
       EMAIL_ADDRESS: $EMAIL_ADDRESS
 
+  mongo:
+    image: mongo
+    restart: always
+    ports:
+      - 127.0.0.1:27017:27017
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: example
+
+  mongo-express:
+    image: mongo-express
+    restart: always
+    ports:
+      - 127.0.0.1:8081:8081
+    volumes:
+      - './data:/data/db'
+    environment:
+      ME_CONFIG_MONGODB_ADMINUSERNAME: root
+      ME_CONFIG_MONGODB_ADMINPASSWORD: example
+      ME_CONFIG_MONGODB_URL: mongodb://root:example@mongo:27017/
+
+
 networks:
-    main:
-      driver: bridge
+  main:
+    driver: bridge
