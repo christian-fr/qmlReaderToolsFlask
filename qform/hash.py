@@ -1,7 +1,9 @@
+import argparse
 import os
 import base64
 import math
 import hashlib
+import getpass
 
 
 def hash_salt_password(password, n: int = 16384, r: int = 16, p: int = 16) -> str:
@@ -37,6 +39,11 @@ def verify_password(password: str, password_check: str) -> bool:
 
 
 if __name__ == '__main__':
-    password_clear = "pass123"
-    pass_hash_salted = hash_salt_password(password_clear)
-    print(verify_password(password_clear, pass_hash_salted))
+    #parser = argparse.ArgumentParser(
+    #    description="Helper program to generate hashed and salted password (bcrypt).")
+    #parser.add_argument('password', help='The password string')
+
+    # password_clear = "pass123"
+    #args = parser.parse_args()
+    print(hash_salt_password(getpass.getpass()))
+    # print(verify_password(password_clear, pass_hash_salted))
