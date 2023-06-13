@@ -366,7 +366,10 @@ def triggers_action_script_items(page: ElementTree.Element,
 
 def variables(xml_root: ElementTree.ElementTree) -> Dict[str, Variable]:
     # gather all preload variables
-    pi_list = flatten([pr.findall('./zofar:preloadItem', NS) for pr in xml_root.find('./zofar:preloads', NS)])
+    if xml_root.find('./zofar:preloads', NS) is not None:
+        pi_list = flatten([pr.findall('./zofar:preloadItem', NS) for pr in xml_root.find('./zofar:preloads', NS)])
+    else:
+        pi_list = []
     pl_var_list = [Variable(name='PRELOAD' + pi.attrib['variable'], type='string') for pi in pi_list]
     # gather all regular variable declarations and add preload variables, return
     reg_var_list = [Variable(name=v.attrib['name'], type=v.attrib['type']) for v in

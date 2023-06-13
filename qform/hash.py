@@ -37,6 +37,4 @@ def verify_password(password: str, password_check: str) -> bool:
 
 
 if __name__ == '__main__':
-    password_clear = "pass123"
-    pass_hash_salted = hash_salt_password(password_clear)
-    print(verify_password(password_clear, pass_hash_salted))
+    pass
