@@ -2,7 +2,7 @@ import argparse
 import os
 from pathlib import Path
 from typing import List, Optional
-from qrt.util.xml import flatten
+from qrt.util.util import flatten
 import networkx as nx
 from qrt.util.xml import Questionnaire, read_xml
 # import pygraphviz

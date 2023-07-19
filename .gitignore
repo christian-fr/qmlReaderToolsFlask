@@ -4,3 +4,4 @@
 __pycache__
 qmlReaderToolsFlask.iml
 *.env
+tmp_*
