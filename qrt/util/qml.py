@@ -608,6 +608,35 @@ class Questionnaire:
     var_declarations: Dict[str, Variable] = field(default_factory=list)
     warnings: List[str] = field(default_factory=list)
     xml_root: lEt = field(default_factory=lEt)
+    pages_unmasked: List[Page] = field(default_factory=list)
+
+
+    def filter(self, filter_list: List[str], filter_startswith_list: List[str]) -> None:
+        self.pages = [p for p in self.pages_unmasked if
+                      any([p.uid.startswith(r) for r in filter_startswith_list]) or any(
+                          [p.uid == r for r in filter_list])]
+
+    # ToDo: return value? docstring!
+    def collapse_pages(self, collapse_list: List[str], collapse_startswith_list: List[str]):
+        pages_to_collapse = [p for p in self.pages if any([p.uid.startswith(r) for r in collapse_startswith_list]) or any(
+            [p.uid == r for r in collapse_list])]
+        for page in pages_to_collapse:
+            for source_page in self.pages:
+                for source_transition in source_page.transitions:
+                    if page.uid == source_transition.target_uid:
+                        t_to_remove = []
+                        for t in page.transitions:
+                            source_page.transitions.append(t)
+                        source_page.transitions.remove(source_transition)
+                        pass
+
+        self.pages = [p for p in self.pages if p.uid not in [p_c.uid for p_c in pages_to_collapse]]
+        pass
+
+    def remove_transitions(self, page_uid_list: List[str]):
+        for page in self.pages:
+            if page.uid in page_uid_list:
+                page.transitions = []
 
     def __str__(self):
         return str([p.uid for p in self.pages[:10]] + ['...'])
@@ -781,6 +810,8 @@ def read_xml(xml_path: Path) -> Questionnaire:
     #     p.trig_redirect_on_exit_false = redirect_triggers(p.triggers_list, 'false')
     #
     #     q.pages.append(p)
+
+    q.pages_unmasked = q.pages.copy()
 
     return q
 

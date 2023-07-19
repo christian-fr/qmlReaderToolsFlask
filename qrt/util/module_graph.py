@@ -4,7 +4,7 @@ from pathlib import Path
 from typing import List, Optional
 from qrt.util.util import flatten
 import networkx as nx
-from qrt.util.xml import Questionnaire, read_xml
+from qrt.util.qml import Questionnaire, read_xml
 # import pygraphviz
 import numpy as np
 import matplotlib as mpl
