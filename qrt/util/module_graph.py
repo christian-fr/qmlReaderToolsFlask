@@ -37,11 +37,8 @@ def color_str_to_hex(color_str: str) -> str:
     return mpl.colors.to_hex(np.array(mpl.colors.to_rgb(color_str)))
 
 
-def create_digraph(q: Questionnaire, color_edges: Optional[dict],
-                   color_nodes: Optional[dict] = None,
-                   remove_dead_ends: bool = True,
-                   label_edges: bool = False
-                   ) -> nx.DiGraph:
+def create_digraph(q: Questionnaire, module_prefixes: List[str], color_edges: Optional[dict], color_nodes: Optional[dict] = None,
+                   remove_dead_ends: bool = True, label_edges: bool = False) -> nx.DiGraph:
     g = nx.DiGraph()
 
     # l = create_blue_red_color_gradient_list()
@@ -163,7 +160,7 @@ def create_digraph(q: Questionnaire, color_edges: Optional[dict],
     return g
 
 
-def main(xml_source: str, output_file: str):
+def main(xml_source: str, output_file: str, module_prefixes: List[str]):
     q = read_xml(Path(xml_source))
 
     _COLOR_STR_DICT = {0: 'black', 1: 'blue', 2: 'pink',
@@ -172,7 +169,6 @@ def main(xml_source: str, output_file: str):
     color_edges = {k: color_str_to_hex(v) for k, v in _COLOR_STR_DICT.items()}
     color_grey = {k: color_str_to_hex('grey') for k in _COLOR_STR_DICT.keys()}
 
-    module_prefixes = ['emp', 'voc', 'int', 'job', 'sem', 'fam', 'mpl', 'sco', 'stu', 'oth', 'doc']
     for module_prefix in module_prefixes:
         module_output_file = f'{os.path.splitext(output_file)[0]}_{module_prefix}{os.path.splitext(output_file)[1]}'
         filter_list = ['episodeDispatcher', 'calendar']
@@ -189,15 +185,14 @@ def main(xml_source: str, output_file: str):
         q.collapse_pages(collapse_list=collapse_list, collapse_startswith_list=collapse_startswith_list)
         page_to_remove_transitions = ['episodeDispatcher']
         q.remove_transitions(page_to_remove_transitions)
-        g = create_digraph(q=q, color_edges=color_edges,
-                           color_nodes=None,
-                           remove_dead_ends=True,
-                           label_edges=False)
+        g = create_digraph(q=q, color_edges=color_edges, color_nodes=None, remove_dead_ends=True, label_edges=False,
+                           module_prefixes=module_prefixes)
         g = nx.nx_agraph.to_agraph(g)
 
         g.layout('dot')
 
         g.draw(module_output_file)
+        print(f'{Path(module_output_file).absolute()=}')
         # g = create_digraph(q, color_grey, color_edges, False)
 
 
@@ -207,6 +202,9 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument("xml_source", help="XML input file")
     parser.add_argument("output_file", help="output file")
-    ns = parser.parse_args()
+    parser.add_argument("--module_prefixes", help="List of module prefixes", required=False)
 
+    ns = parser.parse_args()
+    if ns.__dict__['module_prefixes'] is None:
+        ns.__dict__['module_prefixes'] = ['emp', 'voc', 'int', 'job', 'sem', 'fam', 'mpl', 'sco', 'stu', 'oth', 'doc']
     main(**ns.__dict__)
