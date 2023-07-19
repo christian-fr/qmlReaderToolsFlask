@@ -156,11 +156,14 @@ def create_digraph(q: Questionnaire, color_edges: Optional[dict], color_nodes: O
             no_in_edges = [node for node in g if node not in [edge[1] for edge in g.edges] if node != 'index']
 
             [g.remove_node(node) for node in no_in_edges + no_out_edges]
-
     return g
 
 
-def main(q: Questionnaire, output_file: str, module_prefixes: List[str], **kwargs):
+def main(q: Questionnaire, output_file_prefix: str, output_file_suffix: str, module_prefixes: List[str], **kwargs):
+    if not output_file_suffix.startswith('.'):
+        output_file_suffix = f'.{output_file_suffix}'
+    output_file = output_file_prefix + output_file_suffix
+
     _COLOR_STR_DICT = {0: 'black', 1: 'blue', 2: 'pink',
                        3: 'green', 4: 'orange', 5: 'cyan',
                        6: 'red', 7: 'lime', 8: 'yellow'}
@@ -188,6 +191,9 @@ def main(q: Questionnaire, output_file: str, module_prefixes: List[str], **kwarg
 
         g.layout('dot')
 
+        if not output_file.parent.exists():
+            output_file.parent.mkdir(exist_ok=True, parents=True)
+
         g.draw(module_output_file)
         print(f'{Path(module_output_file).absolute()=}')
         # g = create_digraph(q, color_grey, color_edges, False)
@@ -198,7 +204,8 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
     parser.add_argument("xml_source", help="XML input file")
-    parser.add_argument("output_file", help="output file")
+    parser.add_argument("output_file_prefix", help="output file prefix")
+    parser.add_argument("output_file_suffix", help="output file suffix")
     parser.add_argument("--module_prefixes", help="List of module prefixes", required=False)
 
     ns = parser.parse_args()
