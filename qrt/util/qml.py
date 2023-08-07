@@ -3,112 +3,20 @@ import copy
 from collections import defaultdict, OrderedDict
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Optional, List, Dict, NewType, Union, Tuple, Any
-import re
+from typing import Optional, List, Dict, Union, Tuple, Any
 from xml.etree import ElementTree
 
-from lxml.builder import ElementMaker
 from lxml.etree import ElementTree as lEt
 from lxml.etree import _Element as _lE
 from lxml.etree import _Comment as _lC
+from lxml.etree import tostring as l_to_string
 
-ZOFAR_NS = "{http://www.his.de/zofar/xml/questionnaire}"
-ZOFAR_NS_URI = "http://www.his.de/zofar/xml/questionnaire"
-NS = {
-    "xmlns:zofar": ZOFAR_NS_URI,
-    "zofar": ZOFAR_NS_URI
-}
-# noinspection DuplicatedCode
-ZOFAR_QUESTIONNAIRE_TAG = f"{ZOFAR_NS}questionnaire"
-ZOFAR_NAME_TAG = f"{ZOFAR_NS}name"
-ZOFAR_PAGE_TAG = f"{ZOFAR_NS}page"
-ZOFAR_TRANSITIONS_TAG = f"{ZOFAR_NS}transitions"
-ZOFAR_TRANSITION_TAG = f"{ZOFAR_NS}transition"
-ZOFAR_TRIGGERS_TAG = f"{ZOFAR_NS}triggers"
-ZOFAR_TRIGGER_TAG = f"{ZOFAR_NS}trigger"
-ZOFAR_SCRIPT_ITEM_TAG = f"{ZOFAR_NS}scriptItem"
-ZOFAR_ACTION_TAG = f"{ZOFAR_NS}action"
-ZOFAR_QUESTION_TAG = f"{ZOFAR_NS}question"
-ZOFAR_ANSWER_OPTION_TAG = f"{ZOFAR_NS}answerOption"
-ZOFAR_RESPONSE_DOMAIN_TAG = f"{ZOFAR_NS}responseDomain"
-ZOFAR_INSTRUCTION_TAG = f"{ZOFAR_NS}instruction"
-# noinspection DuplicatedCode
-ZOFAR_INTRODUCTION_TAG = f"{ZOFAR_NS}introduction"
-ZOFAR_VARIABLES_TAG = f"{ZOFAR_NS}variables"
-ZOFAR_VARIABLE_TAG = f"{ZOFAR_NS}variable"
-ZOFAR_SECTION_TAG = f"{ZOFAR_NS}section"
-ZOFAR_HEADER_TAG = f"{ZOFAR_NS}header"
-ZOFAR_BODY_TAG = f"{ZOFAR_NS}body"
-ZOFAR_TITLE_TAG = f"{ZOFAR_NS}title"
-ZOFAR_DISPLAY_TAG = f"{ZOFAR_NS}display"
-ZOFAR_TEXT_TAG = f"{ZOFAR_NS}text"
-ZOFAR_QUESTION_OPEN_TAG = f"{ZOFAR_NS}questionOpen"
-ZOFAR_CALENDAR_EPISODES_TAG = f"{ZOFAR_NS}episodes"
-ZOFAR_CALENDAR_EPISODES_TABLE_TAG = f"{ZOFAR_NS}episodesTable"
-ZOFAR_SINGLE_CHOICE_TAG = f"{ZOFAR_NS}questionSingleChoice"
-ZOFAR_MULTIPLE_CHOICE_TAG = f"{ZOFAR_NS}multipleChoice"
-ZOFAR_MATRIX_QUESTION_OPEN_TAG = f"{ZOFAR_NS}matrixQuestionOpen"
-ZOFAR_MATRIX_SINGLE_CHOICE_TAG = f"{ZOFAR_NS}matrixQuestionSingleChoice"
-ZOFAR_MATRIX_MULTIPLE_CHOICE_TAG = f"{ZOFAR_NS}matrixQuestionMultipleChoice"
-DISPLAY_NAMESPACE = "{http://www.dzhw.eu/zofar/xml/display}"
-ZOFAR_DISPLAY_TEXT_TAG = f"{DISPLAY_NAMESPACE}text"
-ON_EXIT_DEFAULT = 'true'
-DIRECTION_DEFAULT = 'forward'
-CONDITION_DEFAULT = 'true'
-
-ZOFAR_QUESTION_ELEMENTS = [ZOFAR_QUESTION_OPEN_TAG, ZOFAR_SINGLE_CHOICE_TAG, ZOFAR_MULTIPLE_CHOICE_TAG,
-                           ZOFAR_MATRIX_MULTIPLE_CHOICE_TAG, ZOFAR_MATRIX_QUESTION_OPEN_TAG,
-                           ZOFAR_MATRIX_SINGLE_CHOICE_TAG, ZOFAR_MATRIX_MULTIPLE_CHOICE_TAG,
-                           ZOFAR_CALENDAR_EPISODES_TAG, ZOFAR_CALENDAR_EPISODES_TABLE_TAG]
-
-RE_VAL = re.compile(r'#{([a-zA-Z0-9_]+)\.value}')
-RE_VAL_OF = re.compile(r'#{zofar\.valueOf\(([a-zA-Z0-9_]+)\)}')
-RE_AS_NUM = re.compile(r'#{zofar\.asNumber\(([a-zA-Z0-9_]+)\)}')
-
-RE_TO_LOAD = re.compile(r"^\s*toLoad\.add\('([0-9a-zA-Z_]+)'\)")
-RE_TO_RESET = re.compile(r"^\s*toReset\.add\('([0-9a-zA-Z_]+)'\)")
-RE_TO_PERSIST = re.compile(r"^\s*toPersist\.put\('([0-9a-zA-Z_]+)',[a-zA-Z0-9_.]+\)")
-
-RE_REDIRECT_TRIG = re.compile(r"^\s*navigatorBean\.redirect\('([a-zA-Z0-9_]+)'\)\s*$")
-RE_REDIRECT_TRIG_AUX = re.compile(r"^\s*navigatorBean\.redirect\(([a-zA-Z0-9_]+)\)\s*$")
-
-ZOFAR_NS_URI_E = "http://www.his.de/zofar/xml/questionnaire"
-NS_E = {"zofar": ZOFAR_NS_URI}
-E = ElementMaker(namespace=ZOFAR_NS_URI_E, nsmap=NS_E)
-PAGE = E.page
-HEADER = E.header
-MIS_HEADER = E.missingHeader
-BODY = E.body
-SECTION = E.section
-UNIT = E.unit
-QSC = E.questionSingleChoice
-MC = E.multipleChoice
-MMC = E.matrixMultipleChoice
-MQSC = E.matrixQuestionSingleChoice
-QO = E.questionOpen
-LBL = E.label
-PRE = E.prefix
-POST = E.postfix
-ATTQO = E.attachedOpen
-MQO = E.matrixQuestionOpen
-RD = E.responseDomain
-AO = E.answerOption
-ITEM = E.item
-TITLE = E.title
-TEXT = E.text
-INS = E.instruction
-INT = E.introduction
-QUE = E.question
-
-
-def flatten(ll):
-    """
-    Flattens given list of lists by one level
-
-    :param ll: list of lists
-    :return: flattened list
-    """
-    return [it for li in ll for it in li]
+from qrt.util.qmlutil import flatten, ZOFAR_NS, NS, ZOFAR_PAGE_TAG, ZOFAR_SCRIPT_ITEM_TAG, ZOFAR_SECTION_TAG, \
+    ZOFAR_BODY_TAG, ZOFAR_QUESTION_OPEN_TAG, ZOFAR_CALENDAR_EPISODES_TAG, ZOFAR_CALENDAR_EPISODES_TABLE_TAG, \
+    ZOFAR_SINGLE_CHOICE_TAG, ZOFAR_MULTIPLE_CHOICE_TAG, ZOFAR_MATRIX_QUESTION_OPEN_TAG, ZOFAR_MATRIX_SINGLE_CHOICE_TAG, \
+    ZOFAR_MATRIX_MULTIPLE_CHOICE_TAG, ON_EXIT_DEFAULT, DIRECTION_DEFAULT, CONDITION_DEFAULT, ZOFAR_QUESTION_ELEMENTS, \
+    RE_VAL, RE_VAL_OF, RE_AS_NUM, RE_TO_LOAD, RE_TO_RESET, RE_TO_PERSIST, RE_REDIRECT_TRIG, RE_REDIRECT_TRIG_AUX
+from qrt.util.questionnaire import ZofarJumper
 
 
 @dataclass(kw_only=True)
@@ -305,6 +213,18 @@ def js_check_trigger(trigger: ElementTree.Element) -> TriggerJsCheck:
                               y_var=trigger.attrib['yvar'])
     # print(ElementTree.tostring(trigger))
     raise KeyError('Keys "variable" and/or "xvar" and/or "yvar" not found for variable trigger.')
+
+
+def process_jumper(jumper: ElementTree.Element) -> ZofarJumper:
+    value = jumper.attrib['value']
+    target = jumper.attrib['target']
+    return ZofarJumper(value=value, target=target.strip('/'))
+
+
+def process_jumpers(page: ElementTree.Element) -> List[ZofarJumper]:
+    jumpers_list = [e for e in page.iter() if e.tag == zofar_tag(NS, 'zofar', 'jumper')]
+    results = [process_jumper(j) for j in jumpers_list]
+    return results
 
 
 def process_trigger(trigger: ElementTree.Element) -> Union[TriggerVariable, TriggerAction, TriggerJsCheck]:
@@ -593,6 +513,7 @@ class Page:
     trig_redirect_on_exit_false: List[TriggerRedirect] = field(default_factory=list)
     warnings: List[str] = field(default_factory=list)
     source_element: _lE = field(default_factory=_lE)
+    jumpers: List[ZofarJumper] = field(default_factory=list)
 
     @property
     def triggers_list(self):
@@ -610,7 +531,6 @@ class Questionnaire:
     xml_root: lEt = field(default_factory=lEt)
     pages_unmasked: List[Page] = field(default_factory=list)
 
-
     def filter(self, filter_list: List[str], filter_startswith_list: List[str]) -> None:
         self.pages = [p for p in self.pages_unmasked if
                       any([p.uid.startswith(r) for r in filter_startswith_list]) or any(
@@ -618,8 +538,9 @@ class Questionnaire:
 
     # ToDo: return value? docstring!
     def collapse_pages(self, collapse_list: List[str], collapse_startswith_list: List[str]):
-        pages_to_collapse = [p for p in self.pages if any([p.uid.startswith(r) for r in collapse_startswith_list]) or any(
-            [p.uid == r for r in collapse_list])]
+        pages_to_collapse = [p for p in self.pages if
+                             any([p.uid.startswith(r) for r in collapse_startswith_list]) or any(
+                                 [p.uid == r for r in collapse_list])]
         for page in pages_to_collapse:
             for source_page in self.pages:
                 for source_transition in source_page.transitions:
@@ -768,6 +689,9 @@ def read_xml(xml_path: Path) -> Questionnaire:
         p = Page(l_page.attrib['uid'])
 
         p.transitions = transitions(l_page)
+
+        p.jumpers = process_jumpers(l_page)
+
         p.var_ref = var_refs(l_page)
         p._triggers_list = process_triggers(l_page)
         p.body_vars = vars_used(l_page)

@@ -37,4 +37,4 @@ def verify_password(password: str, password_check: str) -> bool:
 
 
 if __name__ == '__main__':
-    pass
+    print(hash_salt_password('pass'))

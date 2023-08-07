@@ -4,7 +4,8 @@ from pathlib import Path
 from typing import Optional, Dict, List, Tuple
 import networkx as nx
 
-from qrt.util.qml import Questionnaire, flatten
+from qrt.util.qml import Questionnaire, read_xml
+from qrt.util.qmlutil import flatten
 
 
 def prepare_digraph(q: Questionnaire, options_dict: Optional[Dict[str, bool]] = None) -> nx.DiGraph:
@@ -63,6 +64,7 @@ def combine_transition_cond(q: Questionnaire, remove_cond_false: bool = False) -
 def digraph(q: Questionnaire,
             show_var: bool = True,
             show_cond: bool = True,
+            show_jumper: bool = True,
             color_nodes: bool = False,
             remove_cond_false: bool = True) -> nx.DiGraph:
     g = nx.DiGraph()
@@ -78,6 +80,11 @@ def digraph(q: Questionnaire,
             tr_tuples = flatten([[(p.uid, t.target_uid, {'label': t.condition}) if t.condition is not None and show_cond
                                   else (p.uid, t.target_uid) for t in p.transitions]
                                  for p in q.pages])
+
+    if show_jumper:
+        jj = flatten([[(p.uid, j.target) for j in p.jumpers] for p in q.pages])
+        [g.add_edge(t[0], t[1], color='violet') for t in jj]
+        pass
 
     if color_nodes:
         tr_tuples = [tp for tp in tr_tuples]
@@ -122,8 +129,9 @@ def make_flowchart(q: Questionnaire,
                    filename: Optional[str] = None,
                    show_var: bool = True,
                    show_cond: bool = True,
-                   color_nodes: bool = False) -> bool:
-    g = digraph(q=q, show_var=show_var, show_cond=show_cond, color_nodes=color_nodes)
+                   color_nodes: bool = False,
+                   show_jumper: bool = False) -> bool:
+    g = digraph(q=q, show_var=show_var, show_cond=show_cond, color_nodes=color_nodes, show_jumper=show_jumper)
     # ToDo: add filename
     a = nx.nx_agraph.to_agraph(g)
     a.node_attr['shape'] = 'box'
@@ -132,3 +140,10 @@ def make_flowchart(q: Questionnaire,
     a.layout('dot')
     a.draw(out_file)
     return True
+
+
+if __name__ == '__main__':
+    q = read_xml('/home/christian/Downloads/questionnaire.xml')
+    out_file = Path('output.png')
+    make_flowchart(q, out_file=out_file, show_jumper=True, show_var=False, show_cond=False)
+    pass

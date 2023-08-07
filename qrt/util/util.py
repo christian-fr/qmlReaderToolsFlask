@@ -4,7 +4,8 @@ from collections import defaultdict, OrderedDict
 from typing import Any, Dict, Optional, Generator, List, Union, Tuple
 
 # import qrt.util.questionnaire
-from qrt.util.qml import Questionnaire, ZOFAR_PAGE_TAG, NS, Page
+from qrt.util.qml import Questionnaire, Page
+from qrt.util.qmlutil import NS, ZOFAR_PAGE_TAG
 # from qrt.util.questionnaire import Questionnaire
 from lxml.etree import ElementTree as lEt
 from qrt.util.graph import prepare_digraph, topologically_sorted_nodes, remove_self_loops, find_cycles

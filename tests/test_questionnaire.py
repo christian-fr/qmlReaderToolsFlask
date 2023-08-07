@@ -8,16 +8,16 @@ from unittest import TestCase
 import lxml.etree
 from lxml.etree import tostring as l_tostring
 
-from qrt.util.qmlgen import unescape_html
+from qrt.util.qmlgen import unescape_html, example_mqsc
 from tests.context import test_qml_path, test_questionnaire
 from tests.context.questionnaire_data import mqsc_example_str
 from qrt.util.util import qml_details
-from qrt.util.questionnaire import example_mqsc, HeaderQuestion, HeaderTitle, SCAnswerOption, check_for_unique_uids, \
+from qrt.util.questionnaire import HeaderQuestion, HeaderTitle, SCAnswerOption, check_for_unique_uids, \
     MatrixResponseDomain, VarRef, Variable, VAR_TYPE_SC, SCMatrixItem, SCResponseDomain, ZofarQuestionSCMatrix, \
     HeaderIntroduction, ZofarAttachedOpen, VAR_TYPE_STR, ZofarQuestionOpen, ZofarQuestionSC, MCResponseDomain, \
     ZofarQuestionMC, MCAnswerOption, HeaderInstruction, VAR_TYPE_BOOL, MCMatrixItem, ZofarQuestionMCMatrix
 
-from qrt.util.qml import ZOFAR_NS_URI
+from qrt.util.qmlutil import ZOFAR_NS_URI
 
 
 class TestQuestionnaire(TestCase):

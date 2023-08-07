@@ -1,6 +1,6 @@
 from unittest import TestCase
 from qrt.util.qmlgen import gen_mqsc, gen_qsc
-from qrt.util.qml import NS
+from qrt.util.qmlutil import NS
 from context import QSC_XML_STR_01, MQSC_XML_STR_01, QSC_XML_STR_02
 
 HEADERS = {1: {'uid': 'q1', 'type': 'question', 'text': 'qtext1', 'visible': 'qvis1'},

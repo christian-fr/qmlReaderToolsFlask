@@ -4,13 +4,14 @@ import re
 from pathlib import Path
 from typing import Dict, Union, List
 
-from lxml.etree import tostring as l_tostring
+from lxml.etree import _Element as _lE, ElementTree as lEt, tostring as l_to_string
 
 from qrt.util.questionnaire import HeaderQuestion, HeaderTitle, HeaderInstruction, HeaderIntroduction, SCAnswerOption, \
     check_for_unique_uids, \
     MatrixResponseDomain, VarRef, Variable, VAR_TYPE_SC, VAR_TYPE_BOOL, SCMatrixItem, SCResponseDomain, \
     ZofarQuestionSCMatrix, \
-    ZofarQuestionSC, HeaderObject, MCAnswerOption, ZofarQuestionOpen, VAR_TYPE_STR, SC_TYPE_DROPDOWN
+    ZofarQuestionSC, HeaderObject, MCAnswerOption, ZofarQuestionOpen, VAR_TYPE_STR, SC_TYPE_DROPDOWN, MCResponseDomain, \
+    ZofarQuestionMC, MCMatrixItem, ZofarQuestionMCMatrix
 
 
 def unescape_html(escaped_str: str) -> str:
@@ -196,4 +197,256 @@ if __name__ == '__main__':
     input_str = input_path.read_text(encoding='utf-8')
     unescaped_str = unescape_html(input_str)
     input_path.write_text(unescaped_str, encoding='utf-8')
+    pass
+
+
+def example_qsc_edit():
+    header_list = [HeaderQuestion(uid="q1",
+                                  content="Kennen Sie PoGS-Weiterbildungsangebote für Promovierende (z.B. Programme und Workshops)?")]
+
+    ao_list = []
+    ao_list.append(SCAnswerOption(uid="ao1", value="1", label="Ja."))
+    ao_list.append(SCAnswerOption(uid="ao2", value="2", label="Nein."))
+    ao_list.append(SCAnswerOption(uid="ao3", value="3", label="Weiß ich nicht."))
+
+    var_ref1 = VarRef(variable=Variable(name="ap06", type=VAR_TYPE_SC))
+    rd = SCResponseDomain(var_ref=var_ref1, ao_list=ao_list)
+
+    qsc = ZofarQuestionSC(uid="qsc1f", header_list=header_list, response_domain=rd)
+
+    return qsc
+
+
+def example_mc_edit():
+    header_list = [HeaderQuestion(uid="q1",
+                                  content="Aus welchem Grund haben Sie (bisher) keine Weiterbildungsangebote der Potsdam Graduate School besucht?"),
+                   HeaderInstruction(uid="ins1",
+                                     content="Bitte wählen Sie alles Zutreffende aus.")]
+
+    ao_list = []
+    ao_list.append(MCAnswerOption(uid="ao1", label="Keine Zeit",
+                                  var_ref=VarRef(variable=Variable(name="ap09a", type=VAR_TYPE_BOOL))))
+    ao_list.append(MCAnswerOption(uid="ao2", label="Format gefällt nicht",
+                                  var_ref=VarRef(variable=Variable(name="ap09b", type=VAR_TYPE_BOOL))))
+    ao_list.append(MCAnswerOption(uid="ao3", label="Themen interessieren nicht",
+                                  var_ref=VarRef(variable=Variable(name="ap09c", type=VAR_TYPE_BOOL))))
+    ao_list.append(MCAnswerOption(uid="ao4", label="Keine Notwendigkeit",
+                                  var_ref=VarRef(variable=Variable(name="ap09d", type=VAR_TYPE_BOOL))))
+    ao_list.append(MCAnswerOption(uid="ao5", label=" Betreuer*in unterstützt Teilnahme nicht",
+                                  var_ref=VarRef(variable=Variable(name="ap09e", type=VAR_TYPE_BOOL))))
+    ao_list.append(MCAnswerOption(uid="ao6", label="Zu teuer",
+                                  var_ref=VarRef(variable=Variable(name="ap09f", type=VAR_TYPE_BOOL))))
+
+    att_open = ZofarQuestionOpen(uid="open", var_ref=VarRef(variable=Variable(name="ap09g", type=VAR_TYPE_STR)))
+    ao_list.append(MCAnswerOption(uid="ao7", label="Sonstige, und zwar:",
+                                  var_ref=VarRef(variable=Variable(name="ap09h", type=VAR_TYPE_BOOL)),
+                                  attached_open_list=[att_open]))
+
+    # integrity check: unique uids
+    assert check_for_unique_uids(ao_list)
+    assert check_for_unique_uids(header_list)
+
+    rd = MCResponseDomain(ao_list=ao_list)
+
+    mc = ZofarQuestionMC(uid="mce", header_list=header_list, response_domain=rd)
+
+    return mc
+
+
+def example_mc_1():
+    header_list = [HeaderQuestion(uid="q1",
+                                  content="Welche Kanäle haben Sie im Zuge Ihrer Informationssuche zum Promovieren an der Universität Potsdam genutzt?"),
+                   HeaderInstruction(uid="ins1",
+                                     content="Bitte wählen Sie alles Zutreffende aus.")]
+
+    att_open = ZofarQuestionOpen(uid="open1", var_ref=VarRef(variable=Variable(name="ap02g", type=VAR_TYPE_STR)))
+
+    ao_list = []
+    ao_list.append(MCAnswerOption(uid="ao1", label="Webseite",
+                                  var_ref=VarRef(variable=Variable(name="ap02a", type=VAR_TYPE_BOOL))))
+    ao_list.append(MCAnswerOption(uid="ao2", label="Flyer/Broschüre",
+                                  var_ref=VarRef(variable=Variable(name="ap02b", type=VAR_TYPE_BOOL))))
+    ao_list.append(MCAnswerOption(uid="ao3", label="Info-Veranstaltung",
+                                  var_ref=VarRef(variable=Variable(name="ap02c", type=VAR_TYPE_BOOL))))
+    ao_list.append(MCAnswerOption(uid="ao4", label="Beratungsgespräch",
+                                  var_ref=VarRef(variable=Variable(name="ap02d", type=VAR_TYPE_BOOL))))
+    ao_list.append(MCAnswerOption(uid="ao5", label="Gespräch mit anderen Wissenschaftler*innen",
+                                  var_ref=VarRef(variable=Variable(name="ap02e", type=VAR_TYPE_BOOL))))
+    ao_list.append(MCAnswerOption(uid="ao6", label="Sonstige, und zwar:",
+                                  var_ref=VarRef(variable=Variable(name="ap02f", type=VAR_TYPE_BOOL)),
+                                  attached_open_list=[att_open]))
+
+    # integrity check: unique uids
+    assert check_for_unique_uids(ao_list)
+    assert check_for_unique_uids(header_list)
+
+    rd = MCResponseDomain(ao_list=ao_list)
+
+    qsc = ZofarQuestionMC(uid="qsc1d", header_list=header_list, response_domain=rd)
+
+    return qsc
+
+
+def example_mqsc():
+    header_list = [HeaderQuestion(uid="q1", content="Was halten Ihre Eltern und Ihre Freunde von Ihrem Studienfach?")]
+    header_list_it = [
+        HeaderQuestion(uid="q1", content="Meine Eltern finden, dass ich ein gutes Studienfach gewählt habe.")]
+
+    title_header_list = []
+    title_header_list.append(HeaderTitle(uid="ti1", content="trifft völlig zu"))
+    title_header_list.append(HeaderTitle(uid="ti2", content="trifft eher zu"))
+    title_header_list.append(HeaderTitle(uid="ti3", content="teils / teils"))
+    title_header_list.append(HeaderTitle(uid="ti4", content="trifft eher nicht zu"))
+    title_header_list.append(HeaderTitle(uid="ti5", content="trifft gar nicht zu"))
+
+    title_missing_list = []
+
+    ao_list_it = []
+    ao_list_it.append(SCAnswerOption(uid='ao1', value="1", label="trifft völlig zu"))
+    ao_list_it.append(SCAnswerOption(uid='ao2', value="2", label="trifft eher zu"))
+    ao_list_it.append(SCAnswerOption(uid='ao3', value="3", label="teils / teils"))
+    ao_list_it.append(SCAnswerOption(uid='ao4', value="4", label="trifft eher nicht zu"))
+    ao_list_it.append(SCAnswerOption(uid='ao5', value="5", label="trifft gar nicht zu", missing=True))
+
+    assert check_for_unique_uids(ao_list_it)
+    assert check_for_unique_uids(title_header_list)
+    assert check_for_unique_uids(title_missing_list)
+    assert check_for_unique_uids(header_list)
+
+    matrix_rd = MatrixResponseDomain(uid="rd", no_response_options=str(len(ao_list_it)))
+
+    it_list = []
+
+    var_ref1 = VarRef(variable=Variable(name="foc680", type=VAR_TYPE_SC))
+    it1 = SCMatrixItem(uid="it1",
+                       header_list=[HeaderQuestion(uid="q1",
+                                                   content="Meine Eltern finden, dass ich ein gutes Studienfach gewählt habe.")],
+                       response_domain=SCResponseDomain(uid="rd", ao_list=ao_list_it, var_ref=var_ref1))
+    it_list.append(it1)
+
+    var_ref2 = VarRef(variable=Variable(name="foc680", type=VAR_TYPE_SC))
+    it2 = SCMatrixItem(uid="it2",
+                       header_list=[HeaderQuestion(uid="q1",
+                                                   content="Meine Freundinnen und Freunde finden, dass ich ein gutes Studienfach gewählt habe.")],
+                       response_domain=SCResponseDomain(uid="rd", ao_list=ao_list_it, var_ref=var_ref2))
+    it_list.append(it2)
+
+    matrix_rd.item_list = it_list
+
+    mqsc = ZofarQuestionSCMatrix(uid='msca', header_list=header_list, response_domain=matrix_rd,
+                                 title_header=title_header_list, missing_header=title_missing_list)
+    return mqsc
+
+
+def example_mqmc():
+    header_list = [HeaderQuestion(uid="q1", content="Was halten Ihre Eltern und Ihre Freunde von Ihrem Studienfach?")]
+    header_list_it = [
+        HeaderQuestion(uid="q1", content="Meine Eltern finden, dass ich ein gutes Studienfach gewählt habe.")]
+
+    title_header_list = []
+    title_header_list.append(HeaderTitle(uid="ti1", content="trifft völlig zu"))
+    title_header_list.append(HeaderTitle(uid="ti2", content="trifft eher zu"))
+    title_header_list.append(HeaderTitle(uid="ti3", content="teils / teils"))
+    title_header_list.append(HeaderTitle(uid="ti4", content="trifft eher nicht zu"))
+    title_header_list.append(HeaderTitle(uid="ti5", content="trifft gar nicht zu"))
+
+    ao_list_it1 = []
+    ao_list_it1.append(MCAnswerOption(uid='ao1', var_ref=VarRef(variable=Variable(name="var01a", type=VAR_TYPE_BOOL)),
+                                      label="trifft völlig zu"))
+    ao_list_it1.append(MCAnswerOption(uid='ao2', var_ref=VarRef(variable=Variable(name="var01b", type=VAR_TYPE_BOOL)),
+                                      label="trifft völlig zu"))
+    ao_list_it1.append(MCAnswerOption(uid='ao3', var_ref=VarRef(variable=Variable(name="var01c", type=VAR_TYPE_BOOL)),
+                                      label="trifft völlig zu"))
+    ao_list_it1.append(MCAnswerOption(uid='ao4', var_ref=VarRef(variable=Variable(name="var01d", type=VAR_TYPE_BOOL)),
+                                      label="trifft völlig zu"))
+    ao_list_it1.append(MCAnswerOption(uid='ao5', var_ref=VarRef(variable=Variable(name="var01e", type=VAR_TYPE_BOOL)),
+                                      label="trifft völlig zu", missing=True))
+
+    ao_list_it2 = []
+    ao_list_it2.append(MCAnswerOption(uid='ao1', var_ref=VarRef(variable=Variable(name="var02a", type=VAR_TYPE_BOOL)),
+                                      label="trifft völlig zu"))
+    ao_list_it2.append(MCAnswerOption(uid='ao2', var_ref=VarRef(variable=Variable(name="var02b", type=VAR_TYPE_BOOL)),
+                                      label="trifft völlig zu"))
+    ao_list_it2.append(MCAnswerOption(uid='ao3', var_ref=VarRef(variable=Variable(name="var02c", type=VAR_TYPE_BOOL)),
+                                      label="trifft völlig zu"))
+    ao_list_it2.append(MCAnswerOption(uid='ao4', var_ref=VarRef(variable=Variable(name="var02d", type=VAR_TYPE_BOOL)),
+                                      label="trifft völlig zu"))
+    ao_list_it2.append(MCAnswerOption(uid='ao5', var_ref=VarRef(variable=Variable(name="var02e", type=VAR_TYPE_BOOL)),
+                                      label="trifft völlig zu", missing=True))
+
+    title_missing_list = []
+
+    assert check_for_unique_uids(ao_list_it1)
+    assert check_for_unique_uids(ao_list_it2)
+    assert check_for_unique_uids(title_header_list)
+    assert check_for_unique_uids(title_missing_list)
+    assert check_for_unique_uids(header_list)
+
+    matrix_rd = MatrixResponseDomain(uid="rd", no_response_options=str(len(ao_list_it1)))
+
+    it_list = []
+
+    var_ref1 = VarRef(variable=Variable(name="foc680", type=VAR_TYPE_SC))
+    it1 = MCMatrixItem(uid="it1",
+                       header_list=[HeaderQuestion(uid="q1",
+                                                   content="Meine Eltern finden, dass ich ein gutes Studienfach gewählt habe.")],
+                       response_domain=MCResponseDomain(uid="rd", ao_list=ao_list_it1))
+    # ToDo: Multiple Choice Response Domain works differently from SC!
+    it_list.append(it1)
+
+    var_ref2 = VarRef(variable=Variable(name="foc680", type=VAR_TYPE_SC))
+    it2 = MCMatrixItem(uid="it2",
+                       header_list=[HeaderQuestion(uid="q1",
+                                                   content="Meine Freundinnen und Freunde finden, dass ich ein gutes Studienfach gewählt habe.")],
+                       response_domain=MCResponseDomain(uid="rd", ao_list=ao_list_it2))
+    it_list.append(it2)
+
+    matrix_rd.item_list = it_list
+
+    mqmc = ZofarQuestionMCMatrix(uid='mscb', header_list=header_list, response_domain=matrix_rd,
+                                 title_header=title_header_list, missing_header=title_missing_list)
+    return mqmc
+
+
+def example_qsc_1():
+    header_list = [HeaderQuestion(uid="q1",
+                                  content="Haben Sie sich an der Universität Potsdam vor Beginn Ihrer Promotion zum Thema Promovieren informiert?")]
+
+    ao_list = []
+    ao_list.append(SCAnswerOption(uid="ao1", value="1", label="Ja."))
+    ao_list.append(SCAnswerOption(uid="ao2", value="2", label="Nein."))
+
+    assert check_for_unique_uids(ao_list)
+    assert check_for_unique_uids(header_list)
+
+    var_ref1 = VarRef(variable=Variable(name="foc680", type=VAR_TYPE_SC))
+    rd = SCResponseDomain(var_ref=var_ref1, ao_list=ao_list)
+
+    qsc = ZofarQuestionSC(uid="qsc1c", header_list=header_list, response_domain=rd)
+
+    return qsc
+
+
+def example_oq():
+    header_list = [HeaderQuestion(uid="q1",
+                                  content="Kennen Sie PoGS-Weiterbildungsangebote für Promovierende (z.B. Programme und Workshops)?")]
+    qo = ZofarQuestionOpen(uid="qo1g", header_list=header_list,
+                           var_ref=VarRef(variable=Variable(name="ap08", type=VAR_TYPE_STR)))
+    return qo
+
+
+if __name__ == '__main__':
+    q_list = []
+    q_list.append(example_qsc_1())
+    q_list.append(example_qsc_edit())
+    q_list.append(example_mc_1())
+    q_list.append(example_mc_edit())
+    q_list.append(example_mqsc())
+    q_list.append(example_mqmc())
+    q_list.append(example_oq())
+
+    qml_str = '\n'.join(
+        [l_to_string(question.gen_xml(), pretty_print=True, encoding='utf-8').decode('utf-8') for question in q_list])
+    pass
+    z = qml_str.replace('xmlns:zofar="http://www.his.de/zofar/xml/questionnaire" ', '')
     pass
