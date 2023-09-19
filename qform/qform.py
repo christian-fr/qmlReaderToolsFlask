@@ -11,7 +11,7 @@ from typing import Dict, Optional, Union, Tuple
 
 import lxml.etree
 import waitress as waitress
-from qform.hash import hash_salt_password, verify_password
+from qform.hash import verify_password
 from qrt.util.qmlgen import gen_mqsc
 from qrt.util.util import qml_details
 from qrt.util.graph import make_flowchart
@@ -24,6 +24,9 @@ import random
 from string import hexdigits
 from qrt.util.qml import read_xml, Questionnaire, VarRef
 from xml.etree.ElementTree import ParseError
+from dotenv import load_dotenv
+
+load_dotenv()
 
 __version__ = "0.0.2"
 
