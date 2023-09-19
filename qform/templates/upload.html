@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Title</title>
+    <title>QML Reader v{{ version }}</title>
     <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='upload.css') }}">
     <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='default.css') }}">
     <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
@@ -24,7 +24,13 @@
     </thead>
     <tbody>
     {% for file in uploaded_files %}
-        <tr id="file_{{ file['file_id'] }}"><td>{{ file['filename'] }}</td><td>uploaded</td><td><a href="details/{{ file['file_id'] }}" target="_blank">qml details</a></td><td class="disabled">not yet processed</td><td><a href="remove/{{ file['file_id'] }}">x</a></td></tr>
+        <tr id="file_{{ file['file_id'] }}">
+            <td>{{ file['filename'] }}</td>
+            <td>uploaded</td>
+            <td><a href="details/{{ file['file_id'] }}" target="_blank">qml details</a></td>
+            <td class="disabled">not yet processed</td>
+            <td><a href="remove/{{ file['file_id'] }}">x</a></td>
+        </tr>
     {% endfor %}
     </tbody>
 </table>

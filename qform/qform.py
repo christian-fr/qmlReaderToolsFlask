@@ -25,6 +25,8 @@ from string import hexdigits
 from qrt.util.qml import read_xml, Questionnaire, VarRef
 from xml.etree.ElementTree import ParseError
 
+__version__ = "0.0.2"
+
 app = Flask(__name__)
 app.debug = True
 app.config['upload_dir'] = TemporaryDirectory()
@@ -212,7 +214,8 @@ def upload():
     uploaded_files = [{k: v for k, v in f.items() if k not in ['questionnaire']} for f in file_dict().values() if
                       f['session_uid'] == session.get('uid')]
     # uploaded_files = list(file_dict().values())
-    return render_template('upload.html', uploaded_files=uploaded_files, flowcharts=uploaded_files)
+    return render_template('upload.html', uploaded_files=uploaded_files, flowcharts=uploaded_files,
+                           version=__version__)
 
 
 @app.route('/gen_mqsc', methods=['GET'])
