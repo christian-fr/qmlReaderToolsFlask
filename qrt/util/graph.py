@@ -3,7 +3,6 @@ from collections import defaultdict
 from pathlib import Path
 from typing import Optional, Dict, List, Tuple
 import networkx as nx
-
 from qrt.util.qml import Questionnaire, read_xml
 from qrt.util.qmlutil import flatten
 
@@ -43,11 +42,37 @@ def topologically_sorted_nodes(g: nx.DiGraph) -> List[str]:
         return []
 
 
-def combine_transition_cond(q: Questionnaire, remove_cond_false: bool = False) -> List[Tuple[str, str, Dict[str, str]]]:
+ZOFAR_REPL_LIST= [
+    (re.compile(r'!([a-zA-Z0-9_\-]+)\.value'), r'\1 == false'),
+    (re.compile(r'([a-zA-Z0-9_\-]+)\.value'), r'\1 == true'),
+    (re.compile(r'zofar\.asNumber\(([a-zA-Z0-9_\-]+)\)'), r'\1'),
+    (re.compile(r'\s+ge\s+'), r'>='),
+    (re.compile(r'\s+gt\s+'), r'>'),
+    (re.compile(r'\s+le\s+'), r'<='),
+    (re.compile(r'\s+lt\s+'), r'<'),
+    (re.compile(r'\s+!=\s+'), r'!='),
+    (re.compile(r'\s+==\s+'), r'=='),
+]
+def repl_zofar_cond(cond_str: str):
+    if cond_str is None:
+        return None
+    result = cond_str
+    for re_s, repl_s in ZOFAR_REPL_LIST:
+        result = re_s.sub(repl_s, result)
+    if not (cond_str.startswith('(') and cond_str.endswith(')')):
+        result = '(' + result + ')'
+    return result
+
+
+def combine_transition_cond(q: Questionnaire, remove_cond_false: bool = False,
+                            replace_zofar_cond: bool = False) -> List[Tuple[str, str, Dict[str, str]]]:
     tr_tuples = defaultdict(list)
     for p in q.pages:
         for i, tr in enumerate(p.transitions):
-            tr_tuples[(p.uid, tr.target_uid)].append((i, p, tr.target_uid, tr.condition))
+            tr_condition = tr.condition
+            if replace_zofar_cond:
+                tr_condition = repl_zofar_cond(tr_condition)
+            tr_tuples[(p.uid, tr.target_uid)].append((i, p, tr.target_uid, tr_condition))
     result = []
     for tr_u_v, tr_tuple_list in tr_tuples.items():
         cond_str_ls = []
@@ -66,10 +91,12 @@ def digraph(q: Questionnaire,
             show_cond: bool = True,
             show_jumper: bool = True,
             color_nodes: bool = False,
-            remove_cond_false: bool = True) -> nx.DiGraph:
+            remove_cond_false: bool = True,
+            replace_zofar_cond: bool = False) -> nx.DiGraph:
     g = nx.DiGraph()
     if show_cond:
-        tr_tuples = combine_transition_cond(q, remove_cond_false=remove_cond_false)
+        tr_tuples = combine_transition_cond(q, remove_cond_false=remove_cond_false,
+                                            replace_zofar_cond=replace_zofar_cond)
     else:
         if remove_cond_false:
             tr_tuples = flatten([[(p.uid, t.target_uid, {
@@ -113,7 +140,7 @@ def digraph(q: Questionnaire,
         [[vars_d[p.uid].add(var.variable.name) for var in p.body_vars] for p in q.pages]
         # add page variables from triggers to dict
         [[vars_d[p.uid].add(var) for var in p.triggers_vars_explicit] for p in q.pages]
-        vars_d = {k: list(v) for k, v in vars_d.items()}
+        vars_d = {k: sorted(list(v)) for k, v in vars_d.items()}
         replacement_dict = {
             uid: f'{uid}\\n[' + ',\\n'.join(
                 [",".join(y) for y in [vars_d[uid][i:i + 3] for i in range(0, len(vars_d[uid]), 3)]]) + ']' for uid
@@ -130,8 +157,10 @@ def make_flowchart(q: Questionnaire,
                    show_var: bool = True,
                    show_cond: bool = True,
                    color_nodes: bool = False,
-                   show_jumper: bool = False) -> bool:
-    g = digraph(q=q, show_var=show_var, show_cond=show_cond, color_nodes=color_nodes, show_jumper=show_jumper)
+                   show_jumper: bool = False,
+                   replace_zofar_cond: bool = False) -> bool:
+    g = digraph(q=q, show_var=show_var, show_cond=show_cond, color_nodes=color_nodes, show_jumper=show_jumper,
+                replace_zofar_cond=replace_zofar_cond)
     # ToDo: add filename
     a = nx.nx_agraph.to_agraph(g)
     a.node_attr['shape'] = 'box'
@@ -143,7 +172,7 @@ def make_flowchart(q: Questionnaire,
 
 
 if __name__ == '__main__':
-    q = read_xml('/home/christian/Downloads/questionnaire.xml')
+    q = read_xml(r'C:\Users\friedrich\PycharmProjects\qmlReaderToolsFlask\tests\context\questionnaire.xml')
     out_file = Path('output.png')
-    make_flowchart(q, out_file=out_file, show_jumper=True, show_var=False, show_cond=False)
+    make_flowchart(q, out_file=out_file, show_jumper=True, show_var=True, show_cond=True, replace_zofar_cond=True)
     pass

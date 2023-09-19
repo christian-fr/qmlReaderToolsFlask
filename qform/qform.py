@@ -426,13 +426,16 @@ def process_graphs(file_id):
     flowchart_file1 = Path(upload_dir(), file_id + '_flowchart_var_cond.svg')
     flowchart_file2 = Path(upload_dir(), file_id + '_flowchart_var.svg')
     flowchart_file3 = Path(upload_dir(), file_id + '_flowchart.svg')
+    flowchart_file4 = Path(upload_dir(), file_id + '_flowchart_var_cond_repl.svg')
 
+    make_flowchart(q=file_meta['questionnaire'], out_file=flowchart_file4, show_var=False, show_cond=False,
+                   color_nodes=True, replace_zofar_cond=True)
     make_flowchart(q=file_meta['questionnaire'], out_file=flowchart_file3, show_var=False, show_cond=False,
                    color_nodes=True)
     make_flowchart(q=file_meta['questionnaire'], out_file=flowchart_file2, show_var=True, show_cond=False)
     make_flowchart(q=file_meta['questionnaire'], out_file=flowchart_file1, show_var=True, show_cond=True)
 
-    file_meta['flowchart'] = [str(flowchart_file1), str(flowchart_file2), str(flowchart_file3)]
+    file_meta['flowchart'] = [str(flowchart_file1), str(flowchart_file2), str(flowchart_file3), str(flowchart_file4)]
 
 
 @app.route('/api/process/<file_id>', methods=['GET'])
