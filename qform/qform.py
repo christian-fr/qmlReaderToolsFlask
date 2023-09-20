@@ -434,8 +434,8 @@ def process_graphs(file_id):
     flowchart_file3 = Path(upload_dir(), file_id + '_flowchart.svg')
     flowchart_file4 = Path(upload_dir(), file_id + '_flowchart_var_cond_repl.svg')
 
-    make_flowchart(q=file_meta['questionnaire'], out_file=flowchart_file4, show_var=False, show_cond=False,
-                   color_nodes=True, replace_zofar_cond=True)
+    make_flowchart(q=file_meta['questionnaire'], out_file=flowchart_file4, show_var=True, show_cond=True,
+                   color_nodes=False, replace_zofar_cond=True)
     make_flowchart(q=file_meta['questionnaire'], out_file=flowchart_file3, show_var=False, show_cond=False,
                    color_nodes=True)
     make_flowchart(q=file_meta['questionnaire'], out_file=flowchart_file2, show_var=True, show_cond=False)

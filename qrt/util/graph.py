@@ -43,9 +43,10 @@ def topologically_sorted_nodes(g: nx.DiGraph) -> List[str]:
 
 
 ZOFAR_REPL_LIST= [
-    (re.compile(r'!([a-zA-Z0-9_\-]+)\.value'), r'\1 == false'),
-    (re.compile(r'([a-zA-Z0-9_\-]+)\.value'), r'\1 == true'),
+    (re.compile(r'!([a-zA-Z0-9_\-]+)\.value'), r'\1 == F'),
+    (re.compile(r'([a-zA-Z0-9_\-]+)\.value'), r'\1 == T'),
     (re.compile(r'zofar\.asNumber\(([a-zA-Z0-9_\-]+)\)'), r'\1'),
+    (re.compile(r'zofar\.isMissing\(([a-zA-Z0-9_\-]+)\)'), r'\1 == MIS'),
     (re.compile(r'\s+ge\s+'), r'>='),
     (re.compile(r'\s+gt\s+'), r'>'),
     (re.compile(r'\s+le\s+'), r'<='),
