@@ -1,8 +1,12 @@
 import argparse
 import os
+import traceback
 from pathlib import Path
 from typing import List, Optional
-from qrt.util.util import flatten
+
+from networkx import NetworkXError
+
+from qrt.util.misc import flatten
 import networkx as nx
 from qrt.util.qml import Questionnaire, read_xml
 # import pygraphviz
@@ -155,14 +159,19 @@ def create_digraph(q: Questionnaire, color_edges: Optional[dict], color_nodes: O
             no_out_edges = [node for node in g if node not in [edge[0] for edge in g.edges] if node != 'end']
             no_in_edges = [node for node in g if node not in [edge[1] for edge in g.edges] if node != 'index']
 
-            [g.remove_node(node) for node in no_in_edges + no_out_edges]
+            for node in no_in_edges + no_out_edges:
+                try:
+                    g.remove_node(node)
+                except NetworkXError:
+                    traceback.print_exc()
+            # [g.remove_node(node) for node in no_in_edges + no_out_edges]
     return g
 
 
 def main(q: Questionnaire, output_file_prefix: str, output_file_suffix: str, module_prefixes: List[str], **kwargs):
     if not output_file_suffix.startswith('.'):
         output_file_suffix = f'.{output_file_suffix}'
-    output_file = output_file_prefix + output_file_suffix
+    output_file = Path(output_file_prefix + output_file_suffix)
 
     _COLOR_STR_DICT = {0: 'black', 1: 'blue', 2: 'pink',
                        3: 'green', 4: 'orange', 5: 'cyan',
